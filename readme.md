@@ -9,6 +9,11 @@ This project is designed with **real‑world application architecture** and focu
 
 ---
 
+## 🌐 Live Demo
+
+🔗 **Project Link:**  
+https://eventra-your-event-manager.onrender.com
+
 ## 🚀 Features
 
 ### 👨‍🎓 Student
