@@ -25,30 +25,30 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-transparent px-4">
       <div className="w-full max-w-4xl flex justify-center items-center">
         {/* Card */}
-        <div className="w-full max-w-md bg-white rounded-2xl shadow-lg px-8 py-10 sm:px-12">
+        <div className="w-full max-w-md bg-white dark:bg-gray-900 rounded-2xl shadow-lg dark:shadow-none dark:border dark:border-gray-800 px-8 py-10 sm:px-12">
           {/* Heading */}
           <div className="mb-8 text-center">
-            <h1 className="text-3xl font-bold text-gray-900">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
               Welcome Back
             </h1>
-            <p className="mt-2 text-gray-500">
+            <p className="mt-2 text-gray-500 dark:text-gray-400">
               Login to continue to Eventra
             </p>
           </div>
 
           {/* Role Selector */}
           <div className="mb-6 flex justify-center">
-            <div className="flex rounded-lg border border-gray-300 overflow-hidden">
+            <div className="flex rounded-lg border border-gray-300 dark:border-gray-700 overflow-hidden">
               <button
                 type="button"
                 onClick={() => setRole("student")}
                 className={`px-6 py-2 text-sm font-medium transition ${
                   role === "student"
-                    ? "bg-gray-900 text-white"
-                    : "text-gray-700 hover:bg-gray-100"
+                    ? "bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900"
+                    : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
                 }`}
               >
                 Student
@@ -58,8 +58,8 @@ const Login = () => {
                 onClick={() => setRole("admin")}
                 className={`px-6 py-2 text-sm font-medium transition ${
                   role === "admin"
-                    ? "bg-gray-900 text-white"
-                    : "text-gray-700 hover:bg-gray-100"
+                    ? "bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900"
+                    : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
                 }`}
               >
                 Admin
@@ -72,7 +72,7 @@ const Login = () => {
             <input
               type="email"
               placeholder="Email address"
-              className="h-11 px-4 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-gray-900 transition"
+              className="h-11 px-4 rounded-lg bg-transparent border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-gray-900 dark:focus:border-white transition"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -81,7 +81,7 @@ const Login = () => {
             <input
               type="password"
               placeholder="Password"
-              className="h-11 px-4 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-gray-900 transition"
+              className="h-11 px-4 rounded-lg bg-transparent border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-gray-900 dark:focus:border-white transition"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -89,18 +89,18 @@ const Login = () => {
 
             <button
               type="submit"
-              className="mt-2 h-11 rounded-lg bg-gray-900 text-white font-medium hover:bg-gray-800 transition"
+              className="mt-2 h-11 rounded-lg bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 font-medium hover:bg-gray-800 dark:hover:bg-gray-200 transition"
             >
               Login as {role === "admin" ? "Admin" : "Student"}
             </button>
           </form>
 
           {/* Footer */}
-          <p className="mt-8 text-center text-sm text-gray-500">
+          <p className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400">
             Don’t have an account?{" "}
             <Link
               to="/register"
-              className="font-medium text-gray-900 hover:underline"
+              className="font-medium text-gray-900 dark:text-white hover:underline"
             >
               Sign up
             </Link>

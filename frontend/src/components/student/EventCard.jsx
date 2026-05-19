@@ -17,20 +17,20 @@ const EventCard = ({ event, onRegister }) => {
   const isFull = availableSeats === 0;
 
   let statusLabel = "Upcoming";
-  let statusClasses = "bg-gray-100 text-gray-700";
+  let statusClasses = "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300";
 
   if (isPastEvent || status === "completed") {
     statusLabel = "Completed";
-    statusClasses = "bg-green-100 text-green-700";
+    statusClasses = "bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400";
   } else if (isFull) {
     statusLabel = "Full";
-    statusClasses = "bg-red-100 text-red-700";
+    statusClasses = "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400";
   }
 
   const isDisabled = statusLabel !== "Upcoming";
 
   return (
-    <div className="w-full flex flex-col bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition">
+    <div className="w-full flex flex-col bg-white dark:bg-gray-900 rounded-xl shadow-md overflow-hidden hover:shadow-lg dark:shadow-none dark:border dark:border-gray-800 transition">
       {/* Banner */}
       <img
         src={banner}
@@ -49,29 +49,29 @@ const EventCard = ({ event, onRegister }) => {
           </span>
 
           {/* Title */}
-          <h2 className="text-lg font-semibold text-gray-900">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
             {title}
           </h2>
 
           {/* Description */}
-          <p className="text-sm text-gray-600 line-clamp-3">
+          <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-3">
             {description}
           </p>
 
           {/* Meta Info */}
-          <div className="flex flex-col gap-2 text-sm text-gray-500">
+          <div className="flex flex-col gap-2 text-sm text-gray-500 dark:text-gray-400">
             <div className="flex items-center gap-2">
-              <FaCalendarAlt className="text-gray-600" />
+              <FaCalendarAlt className="text-gray-600 dark:text-gray-500" />
               <span>{dayjs(date).format("DD MMM YYYY")}</span>
             </div>
 
             <div className="flex items-center gap-2">
-              <FaMapMarkerAlt className="text-gray-600" />
+              <FaMapMarkerAlt className="text-gray-600 dark:text-gray-500" />
               <span>{location}</span>
             </div>
 
             <div className="flex items-center gap-2">
-              <FaUsers className="text-gray-600" />
+              <FaUsers className="text-gray-600 dark:text-gray-500" />
               <span>
                 {availableSeats} / {totalSeats} seats available
               </span>
@@ -86,8 +86,8 @@ const EventCard = ({ event, onRegister }) => {
           className={`w-full h-10 mt-4 rounded-md text-sm font-medium transition
             ${
               isDisabled
-                ? "bg-gray-300 text-gray-600 cursor-not-allowed"
-                : "bg-gray-900 text-white hover:bg-gray-700"
+                ? "bg-gray-300 dark:bg-gray-800 text-gray-600 dark:text-gray-500 cursor-not-allowed"
+                : "bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-gray-700 dark:hover:bg-gray-200"
             }`}
         >
           {statusLabel === "Upcoming"

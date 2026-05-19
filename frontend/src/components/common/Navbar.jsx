@@ -1,14 +1,32 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
-import { Menu, X, Calendar, Ticket, LogOut } from "lucide-react";
+import { Menu, X, Calendar, Ticket, LogOut, Sun, Moon } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import assets from "../../assets/assets.js";
 
 const Navbar = () => {
   const [open, setOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("theme") === "dark" ||
+        (!("theme" in localStorage) && window.matchMedia("(prefers-color-scheme: dark)").matches);
+    }
+    return false;
+  });
+
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add("dark");
+      localStorage.setItem("theme", "dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+      localStorage.setItem("theme", "light");
+    }
+  }, [isDarkMode]);
 
   const isLoggedIn = Boolean(user);
 
@@ -18,7 +36,7 @@ const Navbar = () => {
   const userInitial = user?.name?.charAt(0).toUpperCase() || "?";
 
   return (
-    <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-200">
+    <nav className="sticky top-0 z-50 bg-white/80 dark:bg-gray-950/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800">
       <div className="max-w-7xl mx-auto px-6">
         <div className="flex items-center justify-between h-16">
           
@@ -30,20 +48,20 @@ const Navbar = () => {
             <img
               src={assets.logo}
               alt="Eventra Logo"
-              className="h-9 w-auto object-contain"
+              className="h-9 w-auto object-contain dark:invert"
             />
           </div>
 
           {/* Desktop Navigation */}
           {(isLoggedIn ? isStudent : true) && (
-            <div className="hidden md:flex items-center gap-2 bg-gray-50 rounded-xl px-2 py-1 border border-gray-200">
+            <div className="hidden md:flex items-center gap-2 bg-gray-50 dark:bg-gray-900 rounded-xl px-2 py-1 border border-gray-200 dark:border-gray-800">
               <NavLink
                 to="/events"
                 className={({ isActive }) =>
                   `flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition ${
                     isActive
-                      ? "bg-white text-gray-900 shadow-sm"
-                      : "text-gray-600 hover:bg-white hover:text-gray-900"
+                      ? "bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm"
+                      : "text-gray-600 dark:text-gray-400 hover:bg-white dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white"
                   }`
                 }
               >
@@ -57,8 +75,8 @@ const Navbar = () => {
                   className={({ isActive }) =>
                     `flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition ${
                       isActive
-                        ? "bg-white text-gray-900 shadow-sm"
-                        : "text-gray-600 hover:bg-white hover:text-gray-900"
+                        ? "bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm"
+                        : "text-gray-600 dark:text-gray-400 hover:bg-white dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white"
                     }`
                   }
                 >
@@ -71,17 +89,25 @@ const Navbar = () => {
 
           {/* Desktop Auth */}
           <div className="hidden md:flex items-center gap-3 relative">
+            <button
+              onClick={() => setIsDarkMode(!isDarkMode)}
+              className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 transition"
+              aria-label="Toggle dark mode"
+            >
+              {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            </button>
+
             {!isLoggedIn ? (
               <>
                 <Link
                   to="/login"
-                  className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
+                  className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
                 >
                   Login
                 </Link>
                 <Link
                   to="/register"
-                  className="px-4 py-2 text-sm font-medium text-white bg-gray-900 rounded-lg hover:bg-gray-800 transition"
+                  className="px-4 py-2 text-sm font-medium text-white bg-gray-900 dark:bg-gray-100 dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200 transition"
                 >
                   Register
                 </Link>
@@ -98,20 +124,20 @@ const Navbar = () => {
 
                 {/* Dropdown */}
                 <div
-                  className={`absolute right-0 mt-3 w-56 bg-white border border-gray-200 rounded-xl shadow-lg transition ${
+                  className={`absolute right-0 mt-3 w-56 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-lg transition ${
                     profileOpen ? "opacity-100 visible" : "opacity-0 invisible"
                   }`}
                 >
-                  <div className="px-4 py-3 border-b border-gray-200">
+                  <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-800">
                     {user.role === "admin" && (
-                      <span className="block text-xs font-semibold text-red-600 mb-1">
+                      <span className="block text-xs font-semibold text-red-600 dark:text-red-500 mb-1">
                         ADMIN
                       </span>
                     )}
-                    <p className="text-sm font-medium text-gray-900">
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">
                       {user.name}
                     </p>
-                    <p className="text-xs text-gray-500">{user.email}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{user.email}</p>
                   </div>
 
                   <div className="py-1">
@@ -120,14 +146,14 @@ const Navbar = () => {
                         <NavLink
                           to="/events"
                           onClick={() => setProfileOpen(false)}
-                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
                         >
                           Events
                         </NavLink>
                         <NavLink
                           to="/my-registrations"
                           onClick={() => setProfileOpen(false)}
-                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
                         >
                           My Registrations
                         </NavLink>
@@ -139,14 +165,14 @@ const Navbar = () => {
                         <NavLink
                           to="/admin/dashboard"
                           onClick={() => setProfileOpen(false)}
-                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
                         >
                           Admin Dashboard
                         </NavLink>
                         <NavLink
                           to="/admin/events"
                           onClick={() => setProfileOpen(false)}
-                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
                         >
                           Manage Events
                         </NavLink>
@@ -159,7 +185,7 @@ const Navbar = () => {
                         navigate('/events')
                         setProfileOpen(false);
                       }}
-                      className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                      className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-800"
                     >
                       Logout
                     </button>
@@ -169,14 +195,23 @@ const Navbar = () => {
             )}
           </div>
 
-          {/* Mobile Menu Button */}
-          <button
-            onClick={() => setOpen(!open)}
-            className="md:hidden p-2 rounded-lg text-gray-700 hover:bg-gray-100 transition"
-            aria-label="Toggle menu"
-          >
-            {open ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
+          {/* Mobile Menu Button & Dark Mode Toggle */}
+          <div className="flex md:hidden items-center gap-2">
+            <button
+              onClick={() => setIsDarkMode(!isDarkMode)}
+              className="p-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+              aria-label="Toggle dark mode"
+            >
+              {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            </button>
+            <button
+              onClick={() => setOpen(!open)}
+              className="p-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+              aria-label="Toggle menu"
+            >
+              {open ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -188,37 +223,36 @@ const Navbar = () => {
             : "opacity-0 -translate-y-2 pointer-events-none"
         }`}
       >
-        <div className="absolute right-4 mt-3 w-56 rounded-xl bg-white border border-gray-200 shadow-lg overflow-hidden">
+        <div className="absolute right-4 mt-3 w-56 rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-lg overflow-hidden">
           
-
-          <div className="border-t border-gray-200">
+          <div className="border-t border-gray-200 dark:border-gray-800">
             {!isLoggedIn ? (
               <>
                 <Link
                   to="/login"
                   onClick={() => setOpen(false)}
-                  className="block px-5 py-3 text-sm text-gray-700 hover:bg-gray-100"
+                  className="block px-5 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
                 >
                   Login
                 </Link>
                 <Link
                   to="/register"
                   onClick={() => setOpen(false)}
-                  className="block px-5 py-3 text-sm text-gray-900 font-medium hover:bg-gray-100"
+                  className="block px-5 py-3 text-sm text-gray-900 dark:text-white font-medium hover:bg-gray-100 dark:hover:bg-gray-800"
                 >
                   Register
                 </Link>
               </>
             ) : (
               <>
-                <div className="px-5 py-3 border-b border-gray-200">
+                <div className="px-5 py-3 border-b border-gray-200 dark:border-gray-800">
                   {user.role === "admin" && (
-                    <span className="block text-xs font-semibold text-red-600 mb-1">
+                    <span className="block text-xs font-semibold text-red-600 dark:text-red-500 mb-1">
                       ADMIN
                     </span>
                   )}
-                  <p className="text-sm font-medium text-gray-900">{user.name}</p>
-                  <p className="text-xs text-gray-500">{user.email}</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">{user.name}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{user.email}</p>
                 </div>
 
                 {isStudent && (
@@ -226,14 +260,14 @@ const Navbar = () => {
                     <NavLink
                       to="/events"
                       onClick={() => setOpen(false)}
-                      className="block px-5 py-3 text-sm text-gray-700 hover:bg-gray-100"
+                      className="block px-5 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
                     >
                       Events
                     </NavLink>
                     <NavLink
                       to="/my-registrations"
                       onClick={() => setOpen(false)}
-                      className="block px-5 py-3 text-sm text-gray-700 hover:bg-gray-100"
+                      className="block px-5 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
                     >
                       My Registrations
                     </NavLink>
@@ -245,14 +279,14 @@ const Navbar = () => {
                     <NavLink
                       to="/admin/dashboard"
                       onClick={() => setOpen(false)}
-                      className="block px-5 py-3 text-sm text-gray-700 hover:bg-gray-100"
+                      className="block px-5 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
                     >
                       Admin Dashboard
                     </NavLink>
                     <NavLink
                       to="/admin/events"
                       onClick={() => setOpen(false)}
-                      className="block px-5 py-3 text-sm text-gray-700 hover:bg-gray-100"
+                      className="block px-5 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
                     >
                       Manage Events
                     </NavLink>
@@ -264,7 +298,7 @@ const Navbar = () => {
                     logout();
                     setOpen(false);
                   }}
-                  className="w-full text-left px-5 py-3 text-sm text-red-600 hover:bg-gray-100"
+                  className="w-full text-left px-5 py-3 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-800"
                 >
                   Logout
                 </button>

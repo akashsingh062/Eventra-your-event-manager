@@ -14,16 +14,16 @@ const MyRegistrations = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="bg-transparent">
       {/* Page Container */}
       <div className="max-w-7xl mx-auto px-6 py-10 space-y-10">
         
         {/* Page Heading */}
         <div className="text-center space-y-2">
-          <h1 className="text-3xl font-bold text-gray-900">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
             My Registrations
           </h1>
-          <p className="text-gray-600">
+          <p className="text-gray-600 dark:text-gray-400">
             Events you have successfully registered for
           </p>
         </div>
@@ -31,7 +31,7 @@ const MyRegistrations = () => {
         {/* Content */}
         <div className="flex items-center justify-center">
           {loading ? (
-            <div className="text-gray-500 py-24">
+            <div className="text-gray-500 dark:text-gray-400 py-24">
               Loading your registrations...
             </div>
           ) : myRegistrations.length > 0 ? (
@@ -41,7 +41,7 @@ const MyRegistrations = () => {
               ))}
             </div>
           ) : (
-            <div className="text-center text-gray-500 py-24">
+            <div className="text-center text-gray-500 dark:text-gray-400 py-24">
               You have not registered for any events yet.
             </div>
           )}
