@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { FaCalendarAlt, FaUsers, FaUniversity } from "react-icons/fa";
+import dayjs from "dayjs";
 import { useEvent } from "../context/EventContext";
 import EventCard from "../components/student/EventCard";
 
@@ -10,6 +11,11 @@ const Home = () => {
   useEffect(() => {
     fetchEvents();
   }, []);
+
+  const upcomingEvents = events.filter((event) => {
+    const isPast = dayjs(event.date).isBefore(dayjs(), "day");
+    return !isPast && event.status !== "completed";
+  });
 
   return (
     <div className="bg-transparent">
@@ -82,9 +88,9 @@ const Home = () => {
 
         {loading ? (
           <div className="text-center text-gray-500 dark:text-gray-400 py-12">Loading events...</div>
-        ) : events && events.length > 0 ? (
+        ) : upcomingEvents.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {events.slice(0, 3).map((event) => (
+            {upcomingEvents.slice(0, 3).map((event) => (
               <EventCard
                 key={event._id}
                 event={event}

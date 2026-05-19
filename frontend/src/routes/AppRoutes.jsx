@@ -5,6 +5,7 @@ import Login from "../pages/auth/Login";
 import Register from "../pages/auth/Register";
 import Events from "../pages/student/Events";
 import MyRegistrations from "../pages/student/MyRegistrations";
+import EventDetails from "../pages/EventDetails";
 import NotFound from "../pages/NotFound";
 
 import ProtectedRoute from "../components/common/ProtectedRoute";
@@ -21,6 +22,7 @@ const AppRoutes = () => {
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/events" element={<Events />} />
+      <Route path="/events/:id" element={<EventDetails />} />
 
       {/* Student Protected Routes */}
       <Route

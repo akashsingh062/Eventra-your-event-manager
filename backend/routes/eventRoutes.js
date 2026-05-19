@@ -29,11 +29,9 @@ router.post(
    ADMIN EVENT ROUTES
 ======================= */
 
-// Admin: Get single event by ID
+// Public: Get single event by ID
 router.get(
   "/:id",
-  authMiddleware,
-  roleMiddleware("admin"),
   getEventById
 );
 
