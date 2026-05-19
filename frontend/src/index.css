@@ -3,6 +3,75 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@theme {
+  /* Custom Color Palette */
+  --color-lava-100: #180000;
+  --color-lava-200: #310000;
+  --color-lava-300: #490000;
+  --color-lava-400: #620000;
+  --color-lava-500: #780000;
+  --color-lava-600: #c80000;
+  --color-lava-700: #ff1616;
+  --color-lava-800: #ff6464;
+  --color-lava-900: #ffb1b1;
+
+  --color-brick-100: #260406;
+  --color-brick-200: #4d070c;
+  --color-brick-300: #730b12;
+  --color-brick-400: #990e17;
+  --color-brick-500: #c1121f;
+  --color-brick-600: #eb2330;
+  --color-brick-700: #f05a64;
+  --color-brick-800: #f59198;
+  --color-brick-900: #fac8cb;
+
+  --color-cream-100: #593c04;
+  --color-cream-200: #b17908;
+  --color-cream-300: #f5ae22;
+  --color-cream-400: #f9cf7b;
+  --color-cream-500: #fdf0d5;
+  --color-cream-600: #fdf2dc;
+  --color-cream-700: #fef5e5;
+  --color-cream-800: #fef9ed;
+  --color-cream-900: #fffcf6;
+
+  --color-navy-100: #00090e;
+  --color-navy-200: #00131d;
+  --color-navy-300: #001c2b;
+  --color-navy-400: #002539;
+  --color-navy-500: #003049;
+  --color-navy-600: #00679f;
+  --color-navy-700: #00a0f7;
+  --color-navy-800: #50c2ff;
+  --color-navy-900: #a7e0ff;
+
+  --color-steel-100: #122028;
+  --color-steel-200: #233f51;
+  --color-steel-300: #355f79;
+  --color-steel-400: #477fa2;
+  --color-steel-500: #669bbc;
+  --color-steel-600: #85afc9;
+  --color-steel-700: #a4c3d7;
+  --color-steel-800: #c2d7e4;
+  --color-steel-900: #e1ebf2;
+
+  /* Animations */
+  --animate-blob: blob 7s infinite;
+  --animate-fade-in-up: fadeInUp 0.5s ease-out forwards;
+
+  @keyframes blob {
+    0% { transform: translate(0px, 0px) scale(1); }
+    33% { transform: translate(30px, -50px) scale(1.1); }
+    66% { transform: translate(-20px, 20px) scale(0.9); }
+    100% { transform: translate(0px, 0px) scale(1); }
+  }
+
+  @keyframes fadeInUp {
+    0% { opacity: 0; transform: translateY(20px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+}
+
 *,
 *::before,
 *::after {
@@ -18,7 +87,7 @@ body {
   padding: 0;
   font-family: "Outfit", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
-  @apply bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100;
+  @apply bg-cream-900 text-gray-900 dark:bg-navy-100 dark:text-gray-100;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -44,26 +113,7 @@ button {
 .app-container {
   @apply max-w-7xl mx-auto px-6;
 }
-@theme {
-  --animate-blob: blob 7s infinite;
-  
-  @keyframes blob {
-    0% { transform: translate(0px, 0px) scale(1); }
-    33% { transform: translate(30px, -50px) scale(1.1); }
-    66% { transform: translate(-20px, 20px) scale(0.9); }
-    100% { transform: translate(0px, 0px) scale(1); }
-  }
-}
 
 .animation-delay-2000 {
   animation-delay: 2s;
-}
-
-@theme {
-  --animate-fade-in-up: fadeInUp 0.5s ease-out forwards;
-  
-  @keyframes fadeInUp {
-    0% { opacity: 0; transform: translateY(20px); }
-    100% { opacity: 1; transform: translateY(0); }
-  }
 }

@@ -35,7 +35,7 @@ const EventCard = ({ event, onRegister, isListView = false }) => {
   return (
     <div 
       onClick={handleCardClick}
-      className={`group w-full flex bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden hover:shadow-xl dark:hover:shadow-gray-900/50 hover:border-indigo-200 dark:hover:border-indigo-900/50 transition-all duration-300 cursor-pointer
+      className={`group w-full flex bg-white dark:bg-navy-200 rounded-2xl shadow-sm border border-gray-100 dark:border-navy-400/30 overflow-hidden hover:shadow-xl dark:hover:shadow-navy-100/50 hover:border-steel-700 dark:hover:border-steel-300/30 transition-all duration-300 cursor-pointer
         ${isListView ? "flex-col md:flex-row h-auto" : "flex-col h-full"}
       `}
     >
@@ -51,8 +51,8 @@ const EventCard = ({ event, onRegister, isListView = false }) => {
           <span
             className={`px-3 py-1 text-xs font-semibold rounded-full shadow-sm backdrop-blur-md ${
               statusLabel === "Completed" ? "bg-green-500/90 text-white" :
-              statusLabel === "Full" ? "bg-red-500/90 text-white" :
-              "bg-white/90 text-gray-900 dark:bg-gray-900/90 dark:text-white"
+              statusLabel === "Full" ? "bg-brick-500/90 text-white" :
+              "bg-cream-500/90 text-navy-500 dark:bg-navy-300/90 dark:text-cream-500"
             }`}
           >
             {statusLabel}
@@ -64,33 +64,33 @@ const EventCard = ({ event, onRegister, isListView = false }) => {
       <div className="flex flex-col justify-between flex-1 p-6">
         <div className="space-y-4">
           {/* Title */}
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-cream-500 group-hover:text-navy-600 dark:group-hover:text-steel-500 transition-colors">
             {title}
           </h2>
 
           {/* Description */}
-          <p className={`text-sm text-gray-600 dark:text-gray-400 ${isListView ? "line-clamp-2 md:line-clamp-3" : "line-clamp-3"}`}>
+          <p className={`text-sm text-gray-600 dark:text-steel-500 ${isListView ? "line-clamp-2 md:line-clamp-3" : "line-clamp-3"}`}>
             {description}
           </p>
 
           {/* Meta Info */}
-          <div className={`flex flex-col gap-3 text-sm text-gray-500 dark:text-gray-400 border-t border-gray-100 dark:border-gray-800 pt-5 ${isListView ? "md:flex-row md:flex-wrap md:border-t-0 md:pt-2 md:gap-x-6 md:gap-y-3" : ""}`}>
+          <div className={`flex flex-col gap-3 text-sm text-gray-500 dark:text-steel-500 border-t border-gray-100 dark:border-navy-400/30 pt-5 ${isListView ? "md:flex-row md:flex-wrap md:border-t-0 md:pt-2 md:gap-x-6 md:gap-y-3" : ""}`}>
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+              <div className="w-8 h-8 rounded-full bg-navy-500/10 dark:bg-navy-500/20 flex items-center justify-center text-navy-600 dark:text-steel-500">
                 <FaCalendarAlt />
               </div>
               <span className="font-medium">{dayjs(date).format("DD MMM YYYY")}</span>
             </div>
 
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center text-purple-600 dark:text-purple-400">
+              <div className="w-8 h-8 rounded-full bg-steel-900 dark:bg-steel-300/20 flex items-center justify-center text-steel-400 dark:text-steel-500">
                 <FaMapMarkerAlt />
               </div>
               <span className="font-medium truncate">{location}</span>
             </div>
 
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-pink-50 dark:bg-pink-900/20 flex items-center justify-center text-pink-600 dark:text-pink-400">
+              <div className="w-8 h-8 rounded-full bg-brick-900/30 dark:bg-brick-500/10 flex items-center justify-center text-brick-500 dark:text-brick-700">
                 <FaUsers />
               </div>
               <span className="font-medium">
@@ -101,7 +101,7 @@ const EventCard = ({ event, onRegister, isListView = false }) => {
         </div>
 
         {/* Action Button */}
-        <div className={`flex gap-3 border-gray-50 dark:border-gray-800/50 
+        <div className={`flex gap-3 border-gray-50 dark:border-navy-400/30 
           ${isListView ? "mt-4 md:mt-0 md:pt-0 pt-5 border-t md:border-t-0 md:flex-col justify-center min-w-[140px]" : "mt-6 pt-5 border-t"}
         `}>
           <Link
@@ -120,8 +120,8 @@ const EventCard = ({ event, onRegister, isListView = false }) => {
             className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-colors
               ${
                 isDisabled
-                  ? "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed border border-transparent"
-                  : "bg-indigo-600 text-white hover:bg-indigo-700 shadow-md shadow-indigo-200 dark:shadow-none border border-transparent"
+                  ? "bg-gray-100 dark:bg-navy-400/30 text-gray-400 dark:text-steel-400 cursor-not-allowed border border-transparent"
+                  : "bg-brick-500 text-white hover:bg-brick-400 shadow-md shadow-brick-500/20 dark:shadow-none border border-transparent"
               }`}
           >
             {statusLabel === "Upcoming"

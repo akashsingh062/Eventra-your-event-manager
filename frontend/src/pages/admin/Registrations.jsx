@@ -1,11 +1,12 @@
-
-
 import { useEffect, useState } from "react";
+import { FaTrash, FaSearch, FaUsers, FaCalendarAlt } from "react-icons/fa";
+import dayjs from "dayjs";
 import api from "../../services/api";
 
 const AdminRegistrations = () => {
   const [registrations, setRegistrations] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const fetchRegistrations = async () => {
     try {
@@ -22,9 +23,7 @@ const AdminRegistrations = () => {
     if (!window.confirm("Delete this registration?")) return;
     try {
       await api.delete(`/api/admin/registrations/${id}`);
-      setRegistrations((prev) =>
-        prev.filter((item) => item._id !== id)
-      );
+      setRegistrations((prev) => prev.filter((item) => item._id !== id));
     } catch (error) {
       console.error("Failed to delete registration", error);
     }
@@ -34,76 +33,122 @@ const AdminRegistrations = () => {
     fetchRegistrations();
   }, []);
 
+  const filteredRegistrations = registrations.filter((reg) => {
+    const q = searchQuery.toLowerCase();
+    return (
+      reg.user?.name?.toLowerCase().includes(q) ||
+      reg.user?.email?.toLowerCase().includes(q) ||
+      reg.event?.title?.toLowerCase().includes(q)
+    );
+  });
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64 text-gray-500">
-        Loading registrations...
+      <div className="flex flex-col items-center justify-center h-64 space-y-4">
+        <div className="w-12 h-12 border-4 border-steel-800 border-t-navy-500 rounded-full animate-spin"></div>
+        <p className="text-gray-500 dark:text-gray-400 font-medium">Loading registrations...</p>
       </div>
     );
   }
 
   return (
-    <div className="w-full px-4 md:max-w-7xl md:mx-auto md:px-6 py-6 md:py-8 bg-transparent">
-      <h1 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6 text-left md:text-left">
-        Event Registrations
-      </h1>
+    <div className="max-w-7xl mx-auto px-6 py-10 space-y-8 bg-transparent">
 
-      {registrations.length === 0 ? (
-        <p className="text-gray-500 dark:text-gray-400">No registrations found.</p>
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+            Registrations
+          </h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1">
+            Manage all student event registrations
+          </p>
+        </div>
+        <span className="px-4 py-1.5 rounded-full bg-steel-900 dark:bg-steel-300/20 text-steel-300 dark:text-steel-500 text-sm font-semibold">
+          {registrations.length} Total
+        </span>
+      </div>
+
+      {/* Search */}
+      <div className="relative max-w-md">
+        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
+          <FaSearch />
+        </div>
+        <input
+          type="text"
+          placeholder="Search by student name, email, or event..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full h-12 pl-12 pr-4 rounded-xl bg-white dark:bg-navy-200 border border-gray-200 dark:border-navy-400/30 text-gray-900 dark:text-cream-500 placeholder-gray-400 dark:placeholder-steel-500 focus:outline-none focus:ring-2 focus:ring-navy-600 focus:border-transparent transition-all text-sm"
+        />
+      </div>
+
+      {filteredRegistrations.length === 0 ? (
+        <div className="text-center bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl py-24 shadow-sm max-w-2xl mx-auto">
+          <div className="text-steel-700 dark:text-steel-300 mb-6 flex justify-center">
+            <FaUsers className="w-14 h-14" />
+          </div>
+          <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+            {searchQuery ? "No Matches Found" : "No Registrations"}
+          </h3>
+          <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto">
+            {searchQuery
+              ? `No registrations match "${searchQuery}".`
+              : "No students have registered for events yet."}
+          </p>
+        </div>
       ) : (
         <>
-          <div className="hidden md:block overflow-x-auto bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl">
+          {/* Desktop Table */}
+          <div className="hidden md:block bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl overflow-hidden shadow-sm">
             <table className="min-w-full text-sm">
-              <thead className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-800">
-                <tr>
-                  <th className="px-4 py-3 text-left font-medium text-gray-700 dark:text-gray-300">
+              <thead>
+                <tr className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-800">
+                  <th className="px-6 py-4 text-left font-semibold text-gray-700 dark:text-gray-300 text-xs uppercase tracking-wider">
                     Student
                   </th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-700 dark:text-gray-300">
-                    Email
-                  </th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-700 dark:text-gray-300">
+                  <th className="px-6 py-4 text-left font-semibold text-gray-700 dark:text-gray-300 text-xs uppercase tracking-wider">
                     Event
                   </th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-700 dark:text-gray-300">
+                  <th className="px-6 py-4 text-left font-semibold text-gray-700 dark:text-gray-300 text-xs uppercase tracking-wider">
                     Event Date
                   </th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-700 dark:text-gray-300">
-                    Registered At
+                  <th className="px-6 py-4 text-left font-semibold text-gray-700 dark:text-gray-300 text-xs uppercase tracking-wider">
+                    Registered
                   </th>
-                  <th className="px-4 py-3 text-right font-medium text-gray-700 dark:text-gray-300">
+                  <th className="px-6 py-4 text-right font-semibold text-gray-700 dark:text-gray-300 text-xs uppercase tracking-wider">
                     Action
                   </th>
                 </tr>
               </thead>
 
-              <tbody>
-                {registrations.map((reg) => (
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                {filteredRegistrations.map((reg) => (
                   <tr
                     key={reg._id}
-                    className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                    className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors"
                   >
-                    <td className="px-4 py-3 text-gray-900 dark:text-gray-100">
-                      {reg.user?.name}
+                    <td className="px-6 py-4">
+                      <div>
+                        <p className="font-semibold text-gray-900 dark:text-white">{reg.user?.name}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{reg.user?.email}</p>
+                      </div>
                     </td>
-                    <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
-                      {reg.user?.email}
+                    <td className="px-6 py-4">
+                      <p className="font-medium text-gray-900 dark:text-white">{reg.event?.title}</p>
                     </td>
-                    <td className="px-4 py-3 text-gray-900 dark:text-gray-100">
-                      {reg.event?.title}
+                    <td className="px-6 py-4 text-gray-600 dark:text-gray-400">
+                      {dayjs(reg.event?.date).format("DD MMM YYYY")}
                     </td>
-                    <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
-                      {new Date(reg.event?.date).toDateString()}
+                    <td className="px-6 py-4 text-gray-600 dark:text-gray-400">
+                      {dayjs(reg.createdAt).format("DD MMM YYYY, h:mm A")}
                     </td>
-                    <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
-                      {new Date(reg.createdAt).toLocaleString()}
-                    </td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-6 py-4 text-right">
                       <button
                         onClick={() => handleDelete(reg._id)}
-                        className="text-sm text-red-600 dark:text-red-400 hover:underline"
+                        className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 rounded-lg transition-colors"
                       >
-                        Delete
+                        <FaTrash /> Remove
                       </button>
                     </td>
                   </tr>
@@ -111,38 +156,41 @@ const AdminRegistrations = () => {
               </tbody>
             </table>
           </div>
-          <div className="md:hidden w-full space-y-4">
-            {registrations.map((reg) => (
+
+          {/* Mobile Cards */}
+          <div className="md:hidden space-y-4">
+            {filteredRegistrations.map((reg) => (
               <div
                 key={reg._id}
-                className="w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4 space-y-3"
+                className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5 space-y-4"
               >
-                <div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Student</p>
-                  <p className="font-medium text-gray-900 dark:text-white">{reg.user?.name}</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-300">{reg.user?.email}</p>
+                {/* Student */}
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-navy-500 to-steel-300 text-white flex items-center justify-center font-bold text-sm shadow-sm shrink-0">
+                    {reg.user?.name?.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900 dark:text-white text-sm">{reg.user?.name}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{reg.user?.email}</p>
+                  </div>
                 </div>
 
-                <div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Event</p>
-                  <p className="font-medium text-gray-900 dark:text-white">{reg.event?.title}</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-300">
-                    {new Date(reg.event?.date).toDateString()}
-                  </p>
-                </div>
-
-                <div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Registered At</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-300">
-                    {new Date(reg.createdAt).toLocaleString()}
-                  </p>
+                <div className="border-t border-gray-100 dark:border-gray-800 pt-3 space-y-2">
+                  <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                    <FaCalendarAlt className="text-navy-600 text-xs" />
+                    <span className="font-medium text-gray-900 dark:text-white">{reg.event?.title}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                    <span>Event: {dayjs(reg.event?.date).format("DD MMM YYYY")}</span>
+                    <span>Joined: {dayjs(reg.createdAt).format("DD MMM")}</span>
+                  </div>
                 </div>
 
                 <button
                   onClick={() => handleDelete(reg._id)}
-                  className="w-full mt-2 h-11 rounded-lg bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 font-medium hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors"
+                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 font-medium text-sm hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors"
                 >
-                  Delete Registration
+                  <FaTrash className="text-xs" /> Remove Registration
                 </button>
               </div>
             ))}
