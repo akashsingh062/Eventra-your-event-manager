@@ -61,7 +61,7 @@ export const registerForEvent = asyncHandler(async (req, res) => {
   }
 
   // Check for existing registration
-  const existingReg = await Registration.findOne({ user: userId, event: eventId });
+  const existingReg = await Registration.findOne({ user: userId, event: eventId, isCancelled: false });
   if (existingReg) {
     res.status(400);
     throw new Error("You are already registered for this event");
@@ -120,6 +120,7 @@ export const unregisterFromEvent = asyncHandler(async (req, res) => {
   const registration = await Registration.findOne({
     user: userId,
     event: eventId,
+    isCancelled: false,
   });
 
   if (!registration) {
@@ -172,6 +173,7 @@ export const checkRegistration = asyncHandler(async (req, res) => {
   const registration = await Registration.findOne({
     user: userId,
     event: eventId,
+    isCancelled: false,
   });
 
   if (registration) {
@@ -203,6 +205,7 @@ export const checkRegistration = asyncHandler(async (req, res) => {
 export const getMyRegistrations = asyncHandler(async (req, res) => {
   const registrations = await Registration.find({
     user: req.user._id,
+    isCancelled: false,
   })
     .populate({
       path: "event",
@@ -226,11 +229,8 @@ export const getMyRegistrations = asyncHandler(async (req, res) => {
    ADMIN CONTROLLERS
 ======================= */
 
-// @desc    Get all registrations (Admin)
-// @route   GET /api/registrations
-// @access  Admin
 export const getAllRegistrations = asyncHandler(async (req, res) => {
-  const registrations = await Registration.find()
+  const registrations = await Registration.find({ isCancelled: false })
     .populate("user", "name email")
     .populate(
       "event",
@@ -241,13 +241,10 @@ export const getAllRegistrations = asyncHandler(async (req, res) => {
   res.json(registrations);
 });
 
-// @desc    Get registrations for a specific event (Admin)
-// @route   GET /api/registrations/event/:eventId
-// @access  Admin
 export const getRegistrationsByEvent = asyncHandler(async (req, res) => {
   const { eventId } = req.params;
 
-  const registrations = await Registration.find({ event: eventId })
+  const registrations = await Registration.find({ event: eventId, isCancelled: false })
     .populate("user", "name email")
     .populate(
       "event",
@@ -269,6 +266,11 @@ export const deleteRegistration = asyncHandler(async (req, res) => {
     throw new Error("Registration not found");
   }
 
+  if (registration.isCancelled) {
+    res.status(400);
+    throw new Error("Registration is already cancelled");
+  }
+
   const seatsToRestore = registration.numberOfPeople || 1;
 
   // Restore seat count (atomic, capped at totalSeats)
@@ -280,7 +282,22 @@ export const deleteRegistration = asyncHandler(async (req, res) => {
     );
   }
 
-  await registration.deleteOne();
+  const refunded = req.query.refunded === "true";
 
-  res.json({ message: "Registration deleted successfully" });
+  if (registration.paymentStatus === "paid") {
+    registration.isCancelled = true;
+    registration.ticketStatus = "cancelled";
+    if (refunded) {
+      registration.paymentStatus = "refunded";
+      registration.amountPaid = 0;
+    }
+    await registration.save();
+  } else {
+    // For free or pending/failed registrations, soft delete as well
+    registration.isCancelled = true;
+    registration.ticketStatus = "cancelled";
+    await registration.save();
+  }
+
+  res.json({ message: "Registration cancelled/deleted successfully" });
 });

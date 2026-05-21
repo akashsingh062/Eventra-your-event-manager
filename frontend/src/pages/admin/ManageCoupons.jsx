@@ -247,7 +247,7 @@ const ManageCoupons = () => {
                             return (
                               <span
                                 key={eventId}
-                                className="font-semibold text-gray-900 dark:text-cream-500 text-xs bg-navy-500/10 dark:bg-navy-500/20 text-navy-600 dark:text-navy-300 px-2.5 py-1 rounded-lg truncate"
+                                className="font-semibold text-xs bg-navy-500/10 dark:bg-navy-500/20 text-navy-600 dark:text-cream-500 px-2.5 py-1 rounded-lg truncate"
                                 title={eventObj ? eventObj.title : "Event Specific"}
                               >
                                 {eventObj ? eventObj.title : "Event Specific"}
@@ -354,8 +354,8 @@ const ManageCoupons = () => {
                     onChange={(e) => setDiscountType(e.target.value)}
                     className="w-full bg-gray-50 dark:bg-navy-300 border border-gray-200 dark:border-navy-400/30 rounded-xl px-4 py-3 font-semibold text-gray-900 dark:text-cream-500 focus:outline-none focus:ring-2 focus:ring-brick-500"
                   >
-                    <option value="percentage">Percentage (%)</option>
-                    <option value="fixed">Fixed Amount (₹)</option>
+                    <option value="percentage" className="bg-white dark:bg-navy-200 text-gray-900 dark:text-cream-500">Percentage (%)</option>
+                    <option value="fixed" className="bg-white dark:bg-navy-200 text-gray-900 dark:text-cream-500">Fixed Amount (₹)</option>
                   </select>
                 </div>
                 <div>
@@ -387,11 +387,11 @@ const ManageCoupons = () => {
                   onChange={(e) => setApplicableEvent(e.target.value)}
                   className="w-full bg-gray-50 dark:bg-navy-300 border border-gray-200 dark:border-navy-400/30 rounded-xl px-4 py-3 font-semibold text-gray-900 dark:text-cream-500 focus:outline-none focus:ring-2 focus:ring-brick-500"
                 >
-                  <option value="all">All Events (Global)</option>
+                  <option value="all" className="bg-white dark:bg-navy-200 text-gray-900 dark:text-cream-500">All Events (Global)</option>
                   {events
                     .filter((event) => !event.isFree)
                     .map((event) => (
-                      <option key={event._id} value={event._id}>
+                      <option key={event._id} value={event._id} className="bg-white dark:bg-navy-200 text-gray-900 dark:text-cream-500">
                         {event.title} (₹{event.price})
                       </option>
                     ))}

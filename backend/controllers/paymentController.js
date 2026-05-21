@@ -64,6 +64,7 @@ export const createOrder = asyncHandler(async (req, res) => {
     user: userId,
     event: eventId,
     paymentStatus: { $in: ["paid", "free"] },
+    isCancelled: false,
   });
 
   if (existingReg) {
@@ -76,6 +77,7 @@ export const createOrder = asyncHandler(async (req, res) => {
     user: userId,
     event: eventId,
     paymentStatus: "pending",
+    isCancelled: false,
   });
   if (pendingReg) {
     const seatsToRestore = pendingReg.numberOfPeople || 1;
@@ -203,37 +205,41 @@ export const createOrder = asyncHandler(async (req, res) => {
   const currency = process.env.CURRENCY || "INR";
   const amountInPaise = Math.round(finalTotal * 100);
 
+  const hasRazorpay = razorpayInstance !== null && !!process.env.RAZORPAY_KEY_ID && !!process.env.RAZORPAY_KEY_SECRET;
+
   let order;
   let isSimulated = false;
-  try {
-    order = await razorpayInstance.orders.create({
-      amount: amountInPaise,
-      currency,
-      receipt: `evt_${eventId}_${userId}_${Date.now()}`,
-      notes: {
-        eventId: eventId.toString(),
-        userId: userId.toString(),
-        eventTitle: event.title,
-      },
-    });
-  } catch (error) {
-    if (process.env.NODE_ENV === "production") {
-      console.error("Razorpay API order creation failed in production:", error);
-      // Rollback reserved resources on failure
-      await Event.findByIdAndUpdate(eventId, { $inc: { availableSeats: peopleCount } });
-      if (coupon) {
-        await Coupon.updateOne({ code: coupon.code }, { $inc: { usedCount: -1 } });
-      }
-      res.status(500);
-      throw new Error("Payment gateway integration failed");
-    }
-    console.warn("Razorpay API order creation failed, falling back to simulated order mode:", error.message || error);
+
+  if (!hasRazorpay) {
+    console.warn("Razorpay API credentials not configured. Falling back to simulated order mode.");
     isSimulated = true;
     order = {
       id: `mock_order_${crypto.randomBytes(8).toString("hex")}`,
       amount: amountInPaise,
       currency,
     };
+  } else {
+    try {
+      order = await razorpayInstance.orders.create({
+        amount: amountInPaise,
+        currency,
+        receipt: `evt_${eventId}_${userId}_${Date.now()}`,
+        notes: {
+          eventId: eventId.toString(),
+          userId: userId.toString(),
+          eventTitle: event.title,
+        },
+      });
+    } catch (error) {
+      console.error("Razorpay API order creation failed:", error);
+      // Rollback reserved resources on failure
+      await Event.findByIdAndUpdate(eventId, { $inc: { availableSeats: peopleCount } });
+      if (coupon) {
+        await Coupon.updateOne({ code: coupon.code }, { $inc: { usedCount: -1 } });
+      }
+      res.status(500);
+      throw new Error(`Payment gateway integration failed: ${error.message || error}`);
+    }
   }
 
   // Create pending registration
@@ -283,9 +289,9 @@ export const verifyPayment = asyncHandler(async (req, res) => {
     throw new Error("Missing payment verification data");
   }
 
-  // Handle mock orders (starts with mock_order_ or signature is mock_signature) - DEV/TEST ONLY
+  // Handle mock orders (starts with mock_order_ or signature is mock_signature) - permitted if keys are not configured
   const isMockOrder =
-    process.env.NODE_ENV !== "production" &&
+    (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) &&
     (razorpay_order_id.startsWith("mock_order_") || razorpay_signature === "mock_signature");
 
   if (!isMockOrder) {
@@ -300,7 +306,7 @@ export const verifyPayment = asyncHandler(async (req, res) => {
       // Payment verification failed — mark as failed
       await Registration.findOneAndUpdate(
         { razorpayOrderId: razorpay_order_id },
-        { paymentStatus: "failed", ticketStatus: "cancelled" }
+        { paymentStatus: "failed", ticketStatus: "cancelled", isCancelled: true }
       );
 
       // Restore seats and coupon count
@@ -393,3 +399,14 @@ export const handlePaymentFailure = asyncHandler(async (req, res) => {
     message: "Payment cancelled. Registration removed.",
   });
 });
+
+// @desc    Get Razorpay public key and configuration state
+// @route   GET /api/payments/config
+// @access  Private (student)
+export const getPaymentConfig = asyncHandler(async (req, res) => {
+  res.json({
+    keyId: process.env.RAZORPAY_KEY_ID || null,
+    isSimulated: !(process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET),
+  });
+});
+

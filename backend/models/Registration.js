@@ -31,11 +31,18 @@ const registrationSchema = new mongoose.Schema(
     qrToken: { type: String, unique: true, sparse: true },
     checkedIn: { type: Boolean, default: false },
     checkedInAt: { type: Date, default: null },
+    isCancelled: { type: Boolean, default: false },
   },
   {timestamps: true,}
 );
 
-registrationSchema.index({ user: 1, event: 1 }, { unique: true });
+registrationSchema.index(
+  { user: 1, event: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { isCancelled: false }
+  }
+);
 registrationSchema.index({ razorpayOrderId: 1 }, { unique: true, sparse: true });
 
 const Registration = mongoose.models.Registration || mongoose.model("Registration", registrationSchema);

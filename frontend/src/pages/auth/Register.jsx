@@ -7,20 +7,28 @@ const Register = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
+  const [submitting, setSubmitting] = useState(false);
+
   const { register } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (submitting) return;
+    setSubmitting(true);
 
-    const success = await register({
-      name,
-      email,
-      password,
-    });
+    try {
+      const success = await register({
+        name,
+        email,
+        password,
+      });
 
-    if (success) {
-      navigate("/events");
+      if (success) {
+        navigate("/events");
+      }
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -70,9 +78,17 @@ const Register = () => {
 
             <button
               type="submit"
-              className="mt-2 h-11 rounded-lg bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 font-medium hover:bg-gray-800 dark:hover:bg-gray-200 transition"
+              disabled={submitting}
+              className="mt-2 h-11 rounded-lg bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 font-medium hover:bg-gray-800 dark:hover:bg-gray-200 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              Sign Up
+              {submitting ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white dark:border-gray-900 border-t-transparent rounded-full animate-spin"></div>
+                  Signing Up...
+                </>
+              ) : (
+                "Sign Up"
+              )}
             </button>
           </form>
 

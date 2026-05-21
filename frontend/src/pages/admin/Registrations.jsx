@@ -20,14 +20,28 @@ const AdminRegistrations = () => {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Delete this registration?")) return;
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedReg, setSelectedReg] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDeleteClick = (reg) => {
+    setSelectedReg(reg);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async (refunded) => {
+    if (!selectedReg) return;
+    setDeleting(true);
     try {
-      await api.delete(`/api/admin/registrations/${id}`);
-      setRegistrations((prev) => prev.filter((item) => item._id !== id));
-      toast.success("Registration deleted successfully");
+      await api.delete(`/api/admin/registrations/${selectedReg._id}?refunded=${refunded}`);
+      setRegistrations((prev) => prev.filter((item) => item._id !== selectedReg._id));
+      toast.success("Registration removed successfully");
+      setShowDeleteModal(false);
+      setSelectedReg(null);
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to delete registration");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -186,7 +200,7 @@ const AdminRegistrations = () => {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <button
-                        onClick={() => handleDelete(reg._id)}
+                        onClick={() => handleDeleteClick(reg)}
                         className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 rounded-lg transition-colors"
                       >
                         <FaTrash /> Remove
@@ -258,7 +272,7 @@ const AdminRegistrations = () => {
                 </div>
 
                 <button
-                  onClick={() => handleDelete(reg._id)}
+                  onClick={() => handleDeleteClick(reg)}
                   className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 font-medium text-sm hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors"
                 >
                   <FaTrash className="text-xs" /> Remove Registration
@@ -267,6 +281,103 @@ const AdminRegistrations = () => {
             ))}
           </div>
         </>
+      )}
+      {/* Delete/Refund Confirmation Modal */}
+      {showDeleteModal && selectedReg && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
+          <div className="bg-white dark:bg-navy-200 border border-gray-100 dark:border-navy-400/40 rounded-3xl w-full max-w-md shadow-2xl overflow-hidden">
+            {/* Header */}
+            <div className="px-6 py-5 border-b border-gray-100 dark:border-navy-400/20 flex justify-between items-center bg-gray-50 dark:bg-navy-300/30">
+              <h3 className="font-bold text-gray-900 dark:text-cream-500 text-lg flex items-center gap-2">
+                <FaTrash className="text-brick-500" /> Cancel Registration
+              </h3>
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setSelectedReg(null);
+                }}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-cream-500 text-lg transition-colors"
+              >
+                &times;
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-4 text-left">
+              <p className="text-sm text-gray-600 dark:text-gray-300">
+                Are you sure you want to remove <span className="font-semibold text-gray-900 dark:text-white">{selectedReg.user?.name}</span> from the event <span className="font-semibold text-gray-900 dark:text-white">{selectedReg.event?.title}</span>?
+              </p>
+
+              {selectedReg.paymentStatus === "paid" ? (
+                <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl space-y-3">
+                  <h4 className="font-bold text-amber-800 dark:text-amber-400 text-xs uppercase tracking-wider">
+                    Paid Booking Details
+                  </h4>
+                  <div className="text-xs text-amber-700 dark:text-amber-300 space-y-1">
+                    <p>• Total Paid: <span className="font-bold">₹{selectedReg.amountPaid}</span></p>
+                    <p>• Seats Booked: <span className="font-bold">{selectedReg.numberOfPeople || 1} seat(s)</span></p>
+                  </div>
+                  <p className="text-xs text-amber-600/90 dark:text-amber-400/90 font-medium">
+                    Please specify if you have refunded this payment to the student:
+                  </p>
+                </div>
+              ) : (
+                <div className="p-4 bg-gray-50 dark:bg-navy-300/30 border border-gray-200 dark:border-navy-400/20 rounded-2xl text-xs text-gray-500 dark:text-steel-400">
+                  This is a free or pending registration. No payment was captured.
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex flex-col gap-2 pt-4 border-t border-gray-100 dark:border-navy-400/20">
+                {selectedReg.paymentStatus === "paid" ? (
+                  <>
+                    <button
+                      onClick={() => confirmDelete(true)}
+                      disabled={deleting}
+                      className="w-full py-3 bg-brick-500 hover:bg-brick-400 text-white font-bold rounded-xl text-sm transition-all flex items-center justify-center gap-2 shadow-md shadow-brick-500/20 dark:shadow-none"
+                    >
+                      {deleting ? (
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      ) : (
+                        "Yes, Refund & Cancel"
+                      )}
+                    </button>
+                    <button
+                      onClick={() => confirmDelete(false)}
+                      disabled={deleting}
+                      className="w-full py-3 bg-navy-500 hover:bg-navy-600 text-white font-bold rounded-xl text-sm transition-all flex items-center justify-center gap-2"
+                    >
+                      No, Cancel & Keep Payment (No Refund)
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={() => confirmDelete(false)}
+                    disabled={deleting}
+                    className="w-full py-3 bg-brick-500 hover:bg-brick-400 text-white font-bold rounded-xl text-sm transition-all flex items-center justify-center gap-2 shadow-md shadow-brick-500/20 dark:shadow-none"
+                  >
+                    {deleting ? (
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    ) : (
+                      "Confirm Cancel Booking"
+                    )}
+                  </button>
+                )}
+                
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowDeleteModal(false);
+                    setSelectedReg(null);
+                  }}
+                  className="w-full py-3 bg-gray-50 dark:bg-navy-300/30 hover:bg-gray-100 text-gray-700 dark:text-cream-500 font-bold rounded-xl text-sm border border-gray-200 dark:border-navy-400/20 transition-all"
+                >
+                  Close / Keep Registration
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

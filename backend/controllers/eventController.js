@@ -210,6 +210,7 @@ export const deleteEvent = asyncHandler(async (req, res) => {
 export const getEventRegistrations = asyncHandler(async (req, res) => {
   const registrations = await Registration.find({
     event: req.params.id,
+    isCancelled: false,
   })
     .populate("user", "name email")
     .populate("event", "title date location");
@@ -227,7 +228,7 @@ export const getEventRegistrations = asyncHandler(async (req, res) => {
 // @access  Admin
 export const getAdminDashboardStats = asyncHandler(async (req, res) => {
   const totalEvents = await Event.countDocuments();
-  const totalRegistrations = await Registration.countDocuments();
+  const totalRegistrations = await Registration.countDocuments({ isCancelled: false });
   const totalUsers = await User.countDocuments({ role: "student" });
 
   const upcomingEvents = await Event.countDocuments({
@@ -244,12 +245,12 @@ export const getAdminDashboardStats = asyncHandler(async (req, res) => {
   ]);
 
   const totalAttendees = await Registration.aggregate([
-    { $match: { paymentStatus: { $in: ["paid", "free"] } } },
+    { $match: { paymentStatus: { $in: ["paid", "free"] }, isCancelled: false } },
     { $group: { _id: null, total: { $sum: { $ifNull: ["$numberOfPeople", 1] } } } },
   ]);
 
   const totalCouponDiscount = await Registration.aggregate([
-    { $match: { paymentStatus: { $in: ["paid", "free"] } } },
+    { $match: { paymentStatus: { $in: ["paid", "free"] }, isCancelled: false } },
     { $group: { _id: null, total: { $sum: { $ifNull: ["$discountAmount", 0] } } } },
   ]);
 

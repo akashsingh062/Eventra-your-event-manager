@@ -7,20 +7,28 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("student");
 
+  const [submitting, setSubmitting] = useState(false);
+
   const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (submitting) return;
+    setSubmitting(true);
 
-    const success = await login({
-      email,
-      password,
-      role,
-    });
+    try {
+      const success = await login({
+        email,
+        password,
+        role,
+      });
 
-    if (success) {
-      navigate("/events");
+      if (success) {
+        navigate("/events");
+      }
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -89,9 +97,17 @@ const Login = () => {
 
             <button
               type="submit"
-              className="mt-2 h-11 rounded-lg bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 font-medium hover:bg-gray-800 dark:hover:bg-gray-200 transition"
+              disabled={submitting}
+              className="mt-2 h-11 rounded-lg bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 font-medium hover:bg-gray-800 dark:hover:bg-gray-200 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              Login as {role === "admin" ? "Admin" : "Student"}
+              {submitting ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white dark:border-gray-900 border-t-transparent rounded-full animate-spin"></div>
+                  Logging In...
+                </>
+              ) : (
+                `Login as ${role === "admin" ? "Admin" : "Student"}`
+              )}
             </button>
           </form>
 

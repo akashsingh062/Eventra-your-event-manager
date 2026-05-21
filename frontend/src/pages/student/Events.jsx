@@ -17,8 +17,10 @@ const Events = () => {
   } = useEvent();
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterStatus, setFilterStatus] = useState("all"); // 'all', 'upcoming', 'completed'
+  const [filterStatus, setFilterStatus] = useState("upcoming"); // 'all', 'upcoming', 'completed'
   const [viewMode, setViewMode] = useState("grid"); // 'grid', 'list'
+  const [currentPage, setCurrentPage] = useState(1);
+  const eventsPerPage = 6;
 
   useEffect(() => {
     fetchEvents();
@@ -27,23 +29,34 @@ const Events = () => {
     }
   }, [user]);
 
-  const filteredEvents = events.filter((event) => {
-    const matchesSearch = event.title.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    if (!matchesSearch) return false;
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterStatus, searchQuery]);
 
-    if (filterStatus === "all") return true;
+  const filteredAndSortedEvents = events
+    .filter((event) => {
+      const matchesSearch = event.title.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      if (!matchesSearch) return false;
 
-    const isPast = dayjs(event.date).isBefore(dayjs(), "day") || event.status === "completed";
+      if (filterStatus === "all") return true;
 
-    if (filterStatus === "upcoming") {
-      return !isPast;
-    } else if (filterStatus === "completed") {
-      return isPast;
-    }
-    
-    return true;
-  });
+      const isPast = dayjs(event.date).isBefore(dayjs(), "day") || event.status === "completed";
+
+      if (filterStatus === "upcoming") {
+        return !isPast;
+      } else if (filterStatus === "completed") {
+        return isPast;
+      }
+      
+      return true;
+    })
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+  const indexOfLastEvent = currentPage * eventsPerPage;
+  const indexOfFirstEvent = indexOfLastEvent - eventsPerPage;
+  const currentEvents = filteredAndSortedEvents.slice(indexOfFirstEvent, indexOfLastEvent);
+  const totalPages = Math.ceil(filteredAndSortedEvents.length / eventsPerPage);
 
   return (
     <div className="bg-transparent">
@@ -109,7 +122,7 @@ const Events = () => {
                 {filterStatus === "all" ? (searchQuery ? "Search Results" : "All Events") : `${filterStatus} Events`}
               </h2>
               <span className="px-4 py-1.5 rounded-full bg-navy-500/10 dark:bg-navy-500/20 text-navy-600 dark:text-steel-500 text-sm font-semibold">
-                {filteredEvents.length} Events
+                {filteredAndSortedEvents.length} Events
               </span>
             </div>
 
@@ -145,28 +158,67 @@ const Events = () => {
               <div className="w-12 h-12 border-4 border-steel-800 border-t-navy-500 rounded-full animate-spin"></div>
               <p className="text-gray-500 dark:text-gray-400 font-medium">Loading events...</p>
             </div>
-          ) : filteredEvents.length > 0 ? (
-            <div className={
-              viewMode === "grid" 
-                ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8"
-                : "flex flex-col gap-6 max-w-5xl mx-auto"
-            }>
-              {filteredEvents.map((event, index) => (
-                <div 
-                  key={event._id}
-                  className="animate-fade-in-up"
-                  style={{ animationDelay: `${index * 100}ms`, opacity: 0 }}
-                >
-                  <EventCard
-                    event={event}
-                    onRegister={() => registerForEvent(event._id)}
-                    isRegistered={myRegistrations.some(
-                      (reg) => (reg.event?._id || reg.event) === event._id
-                    )}
-                    isListView={viewMode === "list"}
-                  />
+          ) : currentEvents.length > 0 ? (
+            <div className="space-y-10">
+              <div className={
+                viewMode === "grid" 
+                  ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8"
+                  : "flex flex-col gap-6 max-w-5xl mx-auto"
+              }>
+                {currentEvents.map((event, index) => (
+                  <div 
+                    key={event._id}
+                    className="animate-fade-in-up"
+                    style={{ animationDelay: `${index * 100}ms`, opacity: 0 }}
+                  >
+                    <EventCard
+                      event={event}
+                      onRegister={() => registerForEvent(event._id)}
+                      isRegistered={myRegistrations.some(
+                        (reg) => (reg.event?._id || reg.event) === event._id
+                      )}
+                      isListView={viewMode === "list"}
+                    />
+                  </div>
+                ))}
+              </div>
+
+              {/* Pagination Controller */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-center gap-2 pt-6">
+                  <button
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                    className="px-4 py-2.5 rounded-xl bg-white dark:bg-navy-200 border border-gray-250 dark:border-navy-400/30 text-gray-700 dark:text-cream-500 hover:bg-gray-50 dark:hover:bg-navy-300/30 disabled:opacity-40 disabled:cursor-not-allowed hover:scale-102 active:scale-98 transition-all text-xs font-bold shadow-xs"
+                  >
+                    Previous
+                  </button>
+                  
+                  <div className="flex items-center gap-1.5">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNumber) => (
+                      <button
+                        key={pageNumber}
+                        onClick={() => setCurrentPage(pageNumber)}
+                        className={`w-10 h-10 rounded-xl text-xs font-extrabold transition-all flex items-center justify-center hover:scale-105 active:scale-95 ${
+                          currentPage === pageNumber
+                            ? "bg-brick-500 text-white shadow-md shadow-brick-500/25 dark:shadow-none"
+                            : "bg-white dark:bg-navy-200 border border-gray-250 dark:border-navy-400/30 text-gray-650 dark:text-steel-400 hover:bg-gray-50 dark:hover:bg-navy-300/30"
+                        }`}
+                      >
+                        {pageNumber}
+                      </button>
+                    ))}
+                  </div>
+
+                  <button
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                    className="px-4 py-2.5 rounded-xl bg-white dark:bg-navy-200 border border-gray-250 dark:border-navy-400/30 text-gray-700 dark:text-cream-500 hover:bg-gray-50 dark:hover:bg-navy-300/30 disabled:opacity-40 disabled:cursor-not-allowed hover:scale-102 active:scale-98 transition-all text-xs font-bold shadow-xs"
+                  >
+                    Next
+                  </button>
                 </div>
-              ))}
+              )}
             </div>
           ) : (
             <div className="text-center bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl py-24 shadow-sm">
@@ -175,7 +227,7 @@ const Events = () => {
               </div>
               <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">No events found</h3>
               <p className="text-gray-500 dark:text-gray-400">
-                {searchQuery ? `We couldn't find any events matching "${searchQuery}".` : "There are currently no upcoming events."}
+                {searchQuery ? `We couldn't find any events matching "${searchQuery}".` : "There are currently no events."}
               </p>
             </div>
           )}

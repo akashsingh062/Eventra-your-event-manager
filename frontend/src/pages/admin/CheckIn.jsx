@@ -220,7 +220,46 @@ const CheckIn = () => {
 
                 {/* html5-qrcode container */}
                 <div className="overflow-hidden rounded-2xl bg-gray-950 border border-gray-800 w-full relative">
-                  <div id="qr-reader-container" className="w-full"></div>
+                  <style>{`
+                    #qr-reader-container {
+                      border: none !important;
+                      color: white !important;
+                    }
+                    #qr-reader-container button {
+                      background-color: #c1121f !important;
+                      color: white !important;
+                      border: none !important;
+                      padding: 10px 20px !important;
+                      border-radius: 12px !important;
+                      cursor: pointer !important;
+                      font-weight: bold !important;
+                      margin: 8px 0 !important;
+                      font-size: 14px !important;
+                      transition: all 0.2s ease-in-out !important;
+                    }
+                    #qr-reader-container button:hover {
+                      background-color: #eb2330 !important;
+                    }
+                    #qr-reader-container a {
+                      color: #669bbc !important;
+                      text-decoration: underline !important;
+                    }
+                    #qr-reader-container select {
+                      background-color: #001c2b !important;
+                      color: white !important;
+                      border: 1px solid #002539 !important;
+                      padding: 8px !important;
+                      border-radius: 8px !important;
+                      margin: 8px 0 !important;
+                    }
+                    #qr-reader-container__dashboard_section_csr button {
+                      color: white !important;
+                    }
+                    #qr-reader-container__header_message {
+                      color: white !important;
+                    }
+                  `}</style>
+                  <div id="qr-reader-container" className="w-full text-white"></div>
                 </div>
 
                 <p className="text-xs text-center text-gray-500 dark:text-steel-400">
@@ -313,7 +352,7 @@ const CheckIn = () => {
 
               {/* Attendee details */}
               <div className="space-y-4">
-                <h4 className="text-xs font-bold text-gray-400 dark:text-steel-400 uppercase tracking-wider">Attendee Info</h4>
+                <h4 className="text-xs font-bold text-gray-500 dark:text-steel-400 uppercase tracking-wider">Attendee Info</h4>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="flex items-center gap-3">
@@ -427,7 +466,7 @@ const CheckIn = () => {
             </div>
           ) : (
             <div className="bg-white dark:bg-navy-200 border border-gray-200 dark:border-navy-400/30 rounded-3xl p-12 text-center shadow-sm">
-              <div className="text-gray-300 dark:text-navy-400 flex justify-center mb-4">
+              <div className="text-steel-400 dark:text-navy-400 flex justify-center mb-4">
                 <FaQrcode size={56} />
               </div>
               <h3 className="text-lg font-bold text-gray-900 dark:text-cream-500">Awaiting Ticket Scan</h3>
