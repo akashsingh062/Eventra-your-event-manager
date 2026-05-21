@@ -11,3 +11,18 @@ Details: {
 }
 Stack: No stack trace
 
+[2026-05-21T04:47:10.899Z] Message: Cannot pass an array to query updates unless the `updatePipeline` option is set.
+Details: {}
+Stack: MongooseError: Cannot pass an array to query updates unless the `updatePipeline` option is set.
+    at Query._mergeUpdate (/Users/akash/Skill-Stack/Web-Dev-Mastery/React-Projects/06-Eventra/backend/node_modules/mongoose/lib/query.js:4016:11)
+    at Query.findOneAndUpdate (/Users/akash/Skill-Stack/Web-Dev-Mastery/React-Projects/06-Eventra/backend/node_modules/mongoose/lib/query.js:3470:10)
+    at Model.findOneAndUpdate (/Users/akash/Skill-Stack/Web-Dev-Mastery/React-Projects/06-Eventra/backend/node_modules/mongoose/lib/model.js:2342:13)
+    at file:///Users/akash/Skill-Stack/Web-Dev-Mastery/React-Projects/06-Eventra/backend/controllers/registrationController.js:146:15
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+
+[2026-05-21T04:47:14.476Z] Message: You are not registered for this event
+Details: {}
+Stack: Error: You are not registered for this event
+    at file:///Users/akash/Skill-Stack/Web-Dev-Mastery/React-Projects/06-Eventra/backend/controllers/registrationController.js:120:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+

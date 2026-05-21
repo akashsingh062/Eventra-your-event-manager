@@ -81,13 +81,16 @@ const Navbar = () => {
           {/* Logo */}
           <div
             onClick={() => navigate(isLoggedIn ? "/events" : "/")}
-            className="flex items-center gap-3 cursor-pointer group"
+            className="flex items-center gap-2 cursor-pointer group"
           >
             <img
               src={assets.logo}
               alt="Eventra Logo"
-              className="h-8 w-auto object-contain dark:invert transition-transform group-hover:scale-105"
+              className="h-9 w-9 rounded-xl object-cover border border-gray-200/20 dark:border-navy-400/30 shadow-sm transition-transform group-hover:scale-105"
             />
+            <span className="font-bold text-xl tracking-tight bg-gradient-to-r from-brick-500 to-amber-500 bg-clip-text text-transparent transition-all group-hover:opacity-90">
+              Eventra
+            </span>
           </div>
 
           {/* Desktop Navigation */}

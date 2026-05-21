@@ -1,5 +1,5 @@
 import { useRef, useCallback } from "react";
-import { QRCodeSVG } from "qrcode.react";
+import { QRCodeCanvas } from "qrcode.react";
 import dayjs from "dayjs";
 import { FaDownload, FaCalendarAlt, FaMapMarkerAlt, FaUserTie, FaTicketAlt } from "react-icons/fa";
 
@@ -79,58 +79,54 @@ const QRTicket = ({ event, registration, qrPayload }) => {
     ctx.font = "bold 13px Outfit, sans-serif";
     ctx.fillText(badgeText, 24, 196);
 
-    // QR Code - render from SVG
-    const svgEl = ticketEl.querySelector("svg");
-    if (svgEl) {
-      const svgData = new XMLSerializer().serializeToString(svgEl);
-      const img = new Image();
-      img.onload = () => {
-        const qrSize = 180;
-        const qrX = (width - qrSize) / 2;
-        const qrY = 220;
+    // QR Code - draw directly from canvas
+    const qrCanvas = ticketEl.querySelector(".qr-canvas");
+    if (qrCanvas) {
+      const qrSize = 180;
+      const qrX = (width - qrSize) / 2;
+      const qrY = 220;
 
-        // QR background
-        ctx.fillStyle = "#ffffff";
-        ctx.beginPath();
-        ctx.roundRect(qrX - 12, qrY - 12, qrSize + 24, qrSize + 24, 16);
-        ctx.fill();
+      // QR background
+      ctx.fillStyle = "#ffffff";
+      ctx.beginPath();
+      ctx.roundRect(qrX - 12, qrY - 12, qrSize + 24, qrSize + 24, 16);
+      ctx.fill();
 
-        ctx.drawImage(img, qrX, qrY, qrSize, qrSize);
-
-        // Ticket ID
-        ctx.fillStyle = "#a4c3d7";
-        ctx.font = "11px Outfit, monospace";
-        ctx.textAlign = "center";
-        const ticketId = registration?.qrToken
-          ? registration.qrToken.substring(0, 16).toUpperCase()
-          : "—";
-        ctx.fillText(`TICKET: ${ticketId}`, width / 2, qrY + qrSize + 36);
-
-        // Bottom dashed divider
-        ctx.strokeStyle = "rgba(102, 155, 188, 0.3)";
-        ctx.setLineDash([4, 4]);
-        ctx.beginPath();
-        ctx.moveTo(24, height - 80);
-        ctx.lineTo(width - 24, height - 80);
-        ctx.stroke();
-        ctx.setLineDash([]);
-
-        // Footer
-        ctx.fillStyle = "#669bbc";
-        ctx.font = "12px Outfit, sans-serif";
-        ctx.fillText("Present this QR code at the venue for entry", width / 2, height - 50);
-        ctx.fillText("eventra.app", width / 2, height - 28);
-
-        ctx.textAlign = "start";
-
-        // Download
-        const link = document.createElement("a");
-        link.download = `eventra-ticket-${event?.title?.replace(/\s+/g, "-")?.toLowerCase() || "event"}.png`;
-        link.href = canvas.toDataURL("image/png");
-        link.click();
-      };
-      img.src = `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svgData)))}`;
+      // Draw QR code canvas directly onto the ticket canvas
+      ctx.drawImage(qrCanvas, qrX, qrY, qrSize, qrSize);
     }
+
+    // Ticket ID
+    ctx.fillStyle = "#a4c3d7";
+    ctx.font = "11px Outfit, monospace";
+    ctx.textAlign = "center";
+    const ticketId = registration?.qrToken
+      ? registration.qrToken.substring(0, 16).toUpperCase()
+      : "—";
+    ctx.fillText(`TICKET: ${ticketId}`, width / 2, 220 + 180 + 36);
+
+    // Bottom dashed divider
+    ctx.strokeStyle = "rgba(102, 155, 188, 0.3)";
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(24, height - 80);
+    ctx.lineTo(width - 24, height - 80);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Footer
+    ctx.fillStyle = "#669bbc";
+    ctx.font = "12px Outfit, sans-serif";
+    ctx.fillText("Present this QR code at the venue for entry", width / 2, height - 50);
+    ctx.fillText("eventra.app", width / 2, height - 28);
+
+    ctx.textAlign = "start";
+
+    // Download link
+    const link = document.createElement("a");
+    link.download = `eventra-ticket-${event?.title?.replace(/\s+/g, "-")?.toLowerCase() || "event"}.png`;
+    link.href = canvas.toDataURL("image/png");
+    link.click();
   }, [event, registration]);
 
   if (!qrPayload) return null;
@@ -197,7 +193,8 @@ const QRTicket = ({ event, registration, qrPayload }) => {
           {/* QR Code */}
           <div className="flex flex-col items-center py-2">
             <div className="bg-white rounded-2xl p-4 shadow-inner">
-              <QRCodeSVG
+              <QRCodeCanvas
+                className="qr-canvas"
                 value={qrPayload}
                 size={160}
                 level="H"
