@@ -29,9 +29,7 @@ const Events = () => {
     }
   }, [user]);
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [filterStatus, searchQuery]);
+
 
   const filteredAndSortedEvents = events
     .filter((event) => {
@@ -90,7 +88,10 @@ const Events = () => {
                 type="text"
                 placeholder="Search events by name..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setCurrentPage(1);
+                }}
                 className="w-full pl-12 pr-4 py-4 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 text-white placeholder-steel-600 focus:outline-none focus:ring-2 focus:ring-cream-400 focus:bg-white/20 shadow-inner transition-all"
               />
             </div>
@@ -100,7 +101,10 @@ const Events = () => {
               {['all', 'upcoming', 'completed'].map((status) => (
                 <button
                   key={status}
-                  onClick={() => setFilterStatus(status)}
+                  onClick={() => {
+                    setFilterStatus(status);
+                    setCurrentPage(1);
+                  }}
                   className={`px-6 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
                     filterStatus === status
                       ? "bg-cream-500 text-navy-500 shadow-lg shadow-cream-500/20 scale-105"
