@@ -31,6 +31,7 @@ const registrationSchema = new mongoose.Schema(
 );
 
 registrationSchema.index({ user: 1, event: 1 }, { unique: true });
+registrationSchema.index({ razorpayOrderId: 1 }, { unique: true, sparse: true });
 
 const Registration = mongoose.models.Registration || mongoose.model("Registration", registrationSchema);
 
