@@ -152,6 +152,17 @@ export const EventProvider = ({ children }) => {
     }
   }, []);
 
+  // Get Razorpay configuration
+  const getPaymentConfig = useCallback(async () => {
+    try {
+      const { data } = await api.get("/api/payments/config");
+      return data;
+    } catch (error) {
+      console.error("Failed to fetch payment config:", error);
+      return null;
+    }
+  }, []);
+
   // Coupon Validation
   const validateCoupon = useCallback(async (code, eventId, numberOfPeople = 1) => {
     try {
@@ -226,6 +237,7 @@ export const EventProvider = ({ children }) => {
         createPaymentOrder,
         verifyPayment,
         handlePaymentFailure,
+        getPaymentConfig,
         validateCoupon,
         fetchCoupons,
         createCoupon,

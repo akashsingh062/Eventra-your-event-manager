@@ -33,6 +33,7 @@ const EventDetails = () => {
     verifyPayment,
     handlePaymentFailure,
     validateCoupon,
+    getPaymentConfig,
   } = useEvent();
   const { user } = useAuth();
   const [error, setError] = useState("");
@@ -172,9 +173,17 @@ const EventDetails = () => {
       return;
     }
 
+    // Get dynamic payment config / public key
+    const config = await getPaymentConfig();
+    if (!config || !config.keyId) {
+      toast.error("Failed to load payment gateway configuration from server.");
+      setRegLoading(false);
+      return;
+    }
+
     // Open Razorpay checkout
     const options = {
-      key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+      key: config.keyId,
       amount: orderData.amount,
       currency: orderData.currency,
       name: "Eventra",
