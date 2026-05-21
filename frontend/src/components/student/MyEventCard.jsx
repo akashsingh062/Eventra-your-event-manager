@@ -34,7 +34,29 @@ const MyEventCard = ({ event }) => {
           alt={actualEvent.title}
           className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
         />
-        <div className="absolute top-4 right-4 z-20">
+        <div className="absolute top-4 left-4 z-20 flex flex-col gap-2">
+          <span
+            className={`px-3 py-1 text-xs font-semibold rounded-full shadow-sm backdrop-blur-md ${
+              actualEvent.isFree
+                ? "bg-steel-800/80 text-white border border-white/10"
+                : "bg-amber-500/90 text-white border border-amber-400/20"
+            }`}
+          >
+            {actualEvent.isFree ? "Free" : `₹${actualEvent.price}`}
+          </span>
+          {event.paymentStatus && (
+            <span
+              className={`px-3 py-1 text-[10px] font-bold uppercase rounded-full shadow-sm backdrop-blur-md ${
+                event.paymentStatus === "paid" ? "bg-green-600/90 text-white" :
+                event.paymentStatus === "free" ? "bg-blue-600/90 text-white" :
+                "bg-red-500/90 text-white"
+              }`}
+            >
+              {event.paymentStatus}
+            </span>
+          )}
+        </div>
+        <div className="absolute top-4 right-4 z-20 flex flex-col gap-2 items-end">
           <span
             className={`px-3 py-1 text-xs font-semibold rounded-full shadow-sm backdrop-blur-md ${
               statusLabel === "Completed" ? "bg-green-500/90 text-white" :
@@ -44,6 +66,11 @@ const MyEventCard = ({ event }) => {
           >
             {statusLabel}
           </span>
+          {event.checkedIn && (
+            <span className="px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-wider bg-emerald-500 text-white rounded-full shadow-sm">
+              Checked In
+            </span>
+          )}
         </div>
       </div>
 

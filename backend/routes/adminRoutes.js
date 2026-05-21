@@ -17,6 +17,11 @@ import {
   deleteRegistration,
 } from "../controllers/registrationController.js";
 
+import {
+  verifyTicket,
+  checkInAttendee,
+} from "../controllers/checkinController.js";
+
 import upload from "../middleware/uploadMiddleware.js";
 
 const router = express.Router();
@@ -96,6 +101,26 @@ router.delete(
   authMiddleware,
   roleMiddleware("admin"),
   deleteRegistration
+);
+
+/* =======================
+   ADMIN CHECK-IN
+======================= */
+
+// Verify ticket via QR code
+router.post(
+  "/checkin/verify",
+  authMiddleware,
+  roleMiddleware("admin"),
+  verifyTicket
+);
+
+// Confirm check-in
+router.post(
+  "/checkin/confirm",
+  authMiddleware,
+  roleMiddleware("admin"),
+  checkInAttendee
 );
 
 export default router;

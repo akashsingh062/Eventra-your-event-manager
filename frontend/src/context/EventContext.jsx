@@ -26,7 +26,7 @@ export const EventProvider = ({ children }) => {
     }
   };
 
-  // Register for an event
+  // Register for a FREE event
   const registerForEvent = async (eventId) => {
     try {
       const { data } = await api.post(
@@ -37,12 +37,12 @@ export const EventProvider = ({ children }) => {
       // Refresh relevant data
       fetchEvents();
       fetchMyRegistrations();
-      return true;
+      return data;
     } catch (error) {
       toast.error(
         error.response?.data?.message || "Registration failed"
       );
-      return false;
+      return null;
     }
   };
 
@@ -74,7 +74,62 @@ export const EventProvider = ({ children }) => {
       );
       return data;
     } catch (error) {
-      return { isRegistered: false, registrationId: null };
+      return {
+        isRegistered: false,
+        registrationId: null,
+        paymentStatus: null,
+        ticketStatus: null,
+        qrToken: null,
+        checkedIn: false,
+        qrPayload: null,
+      };
+    }
+  };
+
+  // Create Razorpay order for paid events
+  const createPaymentOrder = async (eventId) => {
+    try {
+      const { data } = await api.post("/api/payments/create-order", {
+        eventId,
+      });
+      return data;
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message || "Failed to create payment order"
+      );
+      return null;
+    }
+  };
+
+  // Verify Razorpay payment
+  const verifyPayment = async (paymentData) => {
+    try {
+      const { data } = await api.post(
+        "/api/payments/verify",
+        paymentData
+      );
+      toast.success("Payment verified! You're registered.");
+
+      // Refresh relevant data
+      fetchEvents();
+      fetchMyRegistrations();
+      return data;
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message || "Payment verification failed"
+      );
+      return null;
+    }
+  };
+
+  // Handle payment failure
+  const handlePaymentFailure = async (orderId) => {
+    try {
+      await api.post("/api/payments/failure", {
+        razorpay_order_id: orderId,
+      });
+    } catch (error) {
+      console.error("Failed to handle payment failure", error);
     }
   };
 
@@ -106,6 +161,9 @@ export const EventProvider = ({ children }) => {
         registerForEvent,
         unregisterFromEvent,
         checkRegistration,
+        createPaymentOrder,
+        verifyPayment,
+        handlePaymentFailure,
       }}
     >
       {children}

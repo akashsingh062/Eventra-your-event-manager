@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { FaCalendarAlt, FaUsers, FaTicketAlt, FaChartLine, FaCheckCircle, FaArrowRight, FaCog, FaClipboardList } from "react-icons/fa";
+import { FaCalendarAlt, FaUsers, FaTicketAlt, FaChartLine, FaCheckCircle, FaArrowRight, FaCog, FaClipboardList, FaRupeeSign, FaQrcode } from "react-icons/fa";
 import api from "../../services/api";
 
 const Dashboard = () => {
@@ -10,6 +10,9 @@ const Dashboard = () => {
     totalUsers: 0,
     upcomingEvents: 0,
     completedEvents: 0,
+    totalRevenue: 0,
+    paidEvents: 0,
+    freeEvents: 0,
   });
   const [loading, setLoading] = useState(true);
 
@@ -31,20 +34,26 @@ const Dashboard = () => {
 
   const statCards = [
     {
+      label: "Total Revenue",
+      value: `₹${stats.totalRevenue || 0}`,
+      icon: <FaRupeeSign />,
+      iconBg: "bg-emerald-500/10 dark:bg-emerald-500/20",
+      iconColor: "text-emerald-600 dark:text-emerald-400",
+    },
+    {
       label: "Total Events",
       value: stats.totalEvents,
       icon: <FaCalendarAlt />,
       iconBg: "bg-navy-500/10 dark:bg-navy-500/20",
       iconColor: "text-navy-600 dark:text-steel-500",
-      trend: "+12%",
+      trend: `${stats.paidEvents} paid / ${stats.freeEvents} free`,
     },
     {
-      label: "Total Registrations",
+      label: "Registrations",
       value: stats.totalRegistrations,
       icon: <FaTicketAlt />,
       iconBg: "bg-steel-900 dark:bg-steel-300/20",
       iconColor: "text-steel-400 dark:text-steel-500",
-      trend: "+8%",
     },
     {
       label: "Students",
@@ -52,7 +61,6 @@ const Dashboard = () => {
       icon: <FaUsers />,
       iconBg: "bg-brick-900/20 dark:bg-brick-500/10",
       iconColor: "text-brick-500 dark:text-brick-700",
-      trend: "+24%",
     },
     {
       label: "Upcoming",
@@ -60,13 +68,6 @@ const Dashboard = () => {
       icon: <FaChartLine />,
       iconBg: "bg-cream-700 dark:bg-cream-100/10",
       iconColor: "text-cream-200 dark:text-cream-400",
-    },
-    {
-      label: "Completed",
-      value: stats.completedEvents,
-      icon: <FaCheckCircle />,
-      iconBg: "bg-emerald-50 dark:bg-emerald-900/20",
-      iconColor: "text-emerald-600 dark:text-emerald-400",
     },
   ];
 
@@ -125,7 +126,7 @@ const Dashboard = () => {
         {/* Quick Actions */}
         <section>
           <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-5">Quick Actions</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             <Link
               to="/admin/events"
               className="group bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl p-6 hover:shadow-lg dark:hover:shadow-gray-900/50 hover:border-navy-600/30 dark:hover:border-steel-300/30 transition-all duration-300"
@@ -139,7 +140,7 @@ const Dashboard = () => {
               <h3 className="font-bold text-gray-900 dark:text-white group-hover:text-navy-600 dark:group-hover:text-steel-500 transition-colors">
                 Manage Events
               </h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-xs leading-normal">
                 Create, edit, or remove campus events.
               </p>
             </Link>
@@ -157,8 +158,26 @@ const Dashboard = () => {
               <h3 className="font-bold text-gray-900 dark:text-white group-hover:text-steel-400 dark:group-hover:text-steel-500 transition-colors">
                 View Registrations
               </h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-xs leading-normal">
                 Review student sign-ups and manage attendees.
+              </p>
+            </Link>
+
+            <Link
+              to="/admin/checkin"
+              className="group bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl p-6 hover:shadow-lg dark:hover:shadow-gray-900/50 hover:border-brick-500/30 dark:hover:border-brick-500/30 transition-all duration-300"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-12 rounded-2xl bg-brick-500/10 dark:bg-brick-500/20 flex items-center justify-center text-brick-500 dark:text-brick-700 text-lg">
+                  <FaQrcode />
+                </div>
+                <FaArrowRight className="text-gray-300 dark:text-gray-700 group-hover:text-brick-500 group-hover:translate-x-1 transition-all" />
+              </div>
+              <h3 className="font-bold text-gray-900 dark:text-white group-hover:text-brick-500 dark:group-hover:text-brick-700 transition-colors">
+                Event Check-In
+              </h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-xs leading-normal">
+                Scan ticket QR codes to verify and confirm attendance.
               </p>
             </Link>
 
@@ -174,7 +193,7 @@ const Dashboard = () => {
               <h3 className="font-bold text-gray-900 dark:text-white">
                 Analytics & Reports
               </h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-xs leading-normal">
                 Attendance data and usage reports — coming soon.
               </p>
             </div>

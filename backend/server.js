@@ -8,6 +8,7 @@ import connectDB from './config/db.js'
 import eventRoutes from "./routes/eventRoutes.js";
 import registrationRoutes from "./routes/registrationRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
+import paymentRoutes from "./routes/paymentRoutes.js";
 import errorMiddleware from "./middleware/errorMiddleware.js";
 import connectCloudinary from './config/cloudnary.js';
 import adminRoutes from "./routes/adminRoutes.js";
@@ -27,16 +28,12 @@ app.get("/", (req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/events", eventRoutes);
 app.use("/api/registrations", registrationRoutes);
+app.use("/api/payments", paymentRoutes);
+
 /* =======================
    ADMIN ROUTES
 ======================= */
 app.use("/api/admin",  adminRoutes);
-// app.get(
-//   "/api/admin/dashboard",
-//   authMiddleware,
-//   roleMiddleware("admin"),
-//   getAdminDashboardStats
-// );
 
 app.use(errorMiddleware);
 

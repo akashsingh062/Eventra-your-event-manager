@@ -2,9 +2,10 @@ import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import api from "../services/api";
 import dayjs from "dayjs";
-import { FaCalendarAlt, FaMapMarkerAlt, FaUsers, FaArrowLeft, FaClock, FaCheckCircle, FaUserTie, FaPhoneAlt } from "react-icons/fa";
+import { FaCalendarAlt, FaMapMarkerAlt, FaUsers, FaArrowLeft, FaClock, FaCheckCircle, FaUserTie, FaPhoneAlt, FaRupeeSign, FaTicketAlt } from "react-icons/fa";
 import { useEvent } from "../context/EventContext";
 import { useAuth } from "../context/AuthContext";
+import QRTicket from "../components/student/QRTicket";
 
 const EventDetails = () => {
   const { id } = useParams();
@@ -12,7 +13,18 @@ const EventDetails = () => {
   const [loading, setLoading] = useState(true);
   const [isRegistered, setIsRegistered] = useState(false);
   const [regLoading, setRegLoading] = useState(false);
-  const { registerForEvent, unregisterFromEvent, checkRegistration } = useEvent();
+  const [registrationData, setRegistrationData] = useState(null);
+  const [showTicket, setShowTicket] = useState(false);
+  const [showPaymentSim, setShowPaymentSim] = useState(false);
+  const [simOrderId, setSimOrderId] = useState("");
+  const {
+    registerForEvent,
+    unregisterFromEvent,
+    checkRegistration,
+    createPaymentOrder,
+    verifyPayment,
+    handlePaymentFailure,
+  } = useEvent();
   const { user } = useAuth();
   const [error, setError] = useState("");
 
@@ -30,6 +42,7 @@ const EventDetails = () => {
     if (!user) return;
     const result = await checkRegistration(id);
     setIsRegistered(result.isRegistered);
+    setRegistrationData(result);
   };
 
   useEffect(() => {
@@ -43,15 +56,112 @@ const EventDetails = () => {
     init();
   }, [id, user]);
 
-  const handleRegister = async () => {
+  // Load Razorpay script
+  const loadRazorpayScript = () => {
+    return new Promise((resolve) => {
+      if (document.getElementById("razorpay-script")) {
+        resolve(true);
+        return;
+      }
+      const script = document.createElement("script");
+      script.id = "razorpay-script";
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
+
+  const handleFreeRegister = async () => {
     setRegLoading(true);
-    const success = await registerForEvent(event._id);
-    if (success) {
+    const result = await registerForEvent(event._id);
+    if (result) {
       setIsRegistered(true);
-      // Refresh event data to get updated seats
       await fetchEvent();
+      await fetchRegistrationStatus();
     }
     setRegLoading(false);
+  };
+
+  const handlePaidRegister = async () => {
+    setRegLoading(true);
+
+    // Load Razorpay script
+    const loaded = await loadRazorpayScript();
+    if (!loaded) {
+      setRegLoading(false);
+      return;
+    }
+
+    // Create order
+    const orderData = await createPaymentOrder(event._id);
+    if (!orderData) {
+      setRegLoading(false);
+      return;
+    }
+
+    if (orderData.simulated) {
+      setSimOrderId(orderData.orderId);
+      setShowPaymentSim(true);
+      return;
+    }
+
+    // Open Razorpay checkout
+    const options = {
+      key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+      amount: orderData.amount,
+      currency: orderData.currency,
+      name: "Eventra",
+      description: `Ticket for ${event.title}`,
+      order_id: orderData.orderId,
+      handler: async function (response) {
+        // Verify payment
+        const result = await verifyPayment({
+          razorpay_order_id: response.razorpay_order_id,
+          razorpay_payment_id: response.razorpay_payment_id,
+          razorpay_signature: response.razorpay_signature,
+        });
+
+        if (result) {
+          setIsRegistered(true);
+          await fetchEvent();
+          await fetchRegistrationStatus();
+          setShowTicket(true);
+        }
+        setRegLoading(false);
+      },
+      modal: {
+        ondismiss: async function () {
+          // User closed the payment modal
+          await handlePaymentFailure(orderData.orderId);
+          await fetchEvent();
+          setRegLoading(false);
+        },
+      },
+      prefill: {
+        name: user?.name || "",
+        email: user?.email || "",
+      },
+      theme: {
+        color: "#003049",
+      },
+    };
+
+    const rzp = new window.Razorpay(options);
+    rzp.on("payment.failed", async function (response) {
+      await handlePaymentFailure(orderData.orderId);
+      await fetchEvent();
+      setRegLoading(false);
+    });
+    rzp.open();
+  };
+
+  const handleRegister = () => {
+    if (event.isFree) {
+      handleFreeRegister();
+    } else {
+      handlePaidRegister();
+    }
   };
 
   const handleUnregister = async () => {
@@ -59,7 +169,8 @@ const EventDetails = () => {
     const success = await unregisterFromEvent(event._id);
     if (success) {
       setIsRegistered(false);
-      // Refresh event data to get updated seats
+      setRegistrationData(null);
+      setShowTicket(false);
       await fetchEvent();
     }
     setRegLoading(false);
@@ -100,8 +211,9 @@ const EventDetails = () => {
 
   // Determine button state
   const isLoggedIn = Boolean(user);
+  const isPaidRegistration = registrationData?.paymentStatus === "paid";
   const canRegister = isLoggedIn && statusLabel === "Upcoming" && !isRegistered && !isFull;
-  const canUnregister = isLoggedIn && isRegistered && !isEventClosed;
+  const canUnregister = isLoggedIn && isRegistered && !isEventClosed && !isPaidRegistration;
 
   return (
     <div className="bg-transparent pb-20">
@@ -121,14 +233,36 @@ const EventDetails = () => {
           </Link>
 
           <div className="space-y-4 max-w-3xl">
-            <span className={`inline-flex items-center gap-2 px-4 py-1.5 text-xs font-bold uppercase tracking-wider rounded-full backdrop-blur-md border ${
-              statusLabel === "Completed" ? "bg-green-500/20 text-green-300 border-green-500/30" :
-              statusLabel === "Full" ? "bg-brick-500/30 text-brick-900 border-brick-500/30" :
-              "bg-steel-500/20 text-steel-900 border-steel-500/30"
-            }`}>
-              {statusLabel === "Completed" ? <FaCheckCircle /> : statusLabel === "Full" ? <FaUsers /> : <FaClock />}
-              {statusLabel}
-            </span>
+            <div className="flex flex-wrap gap-3">
+              <span className={`inline-flex items-center gap-2 px-4 py-1.5 text-xs font-bold uppercase tracking-wider rounded-full backdrop-blur-md border ${
+                statusLabel === "Completed" ? "bg-green-500/20 text-green-300 border-green-500/30" :
+                statusLabel === "Full" ? "bg-brick-500/30 text-brick-900 border-brick-500/30" :
+                "bg-steel-500/20 text-steel-900 border-steel-500/30"
+              }`}>
+                {statusLabel === "Completed" ? <FaCheckCircle /> : statusLabel === "Full" ? <FaUsers /> : <FaClock />}
+                {statusLabel}
+              </span>
+
+              {/* Price badge */}
+              <span className={`inline-flex items-center gap-1.5 px-4 py-1.5 text-xs font-bold uppercase tracking-wider rounded-full backdrop-blur-md border ${
+                event.isFree
+                  ? "bg-steel-500/20 text-steel-700 border-steel-500/30"
+                  : "bg-cream-300/20 text-cream-300 border-cream-300/30"
+              }`}>
+                {event.isFree ? (
+                  <>
+                    <FaTicketAlt />
+                    Free
+                  </>
+                ) : (
+                  <>
+                    <FaRupeeSign />
+                    ₹{event.price}
+                  </>
+                )}
+              </span>
+            </div>
+
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-white leading-tight drop-shadow-lg">
               {event.title}
             </h1>
@@ -185,6 +319,12 @@ const EventDetails = () => {
                   <p className="font-semibold text-gray-900 dark:text-cream-500">{event.contactInfo || "—"}</p>
                 </div>
                 <div className="bg-cream-900 dark:bg-navy-300/30 rounded-2xl p-5">
+                  <p className="text-xs text-gray-500 dark:text-steel-500 font-medium uppercase tracking-wider mb-1">Ticket Price</p>
+                  <p className="font-semibold text-gray-900 dark:text-cream-500">
+                    {event.isFree ? "Free" : `₹${event.price}`}
+                  </p>
+                </div>
+                <div className="bg-cream-900 dark:bg-navy-300/30 rounded-2xl p-5">
                   <p className="text-xs text-gray-500 dark:text-steel-500 font-medium uppercase tracking-wider mb-1">Total Capacity</p>
                   <p className="font-semibold text-gray-900 dark:text-cream-500">{event.totalSeats} seats</p>
                 </div>
@@ -194,6 +334,21 @@ const EventDetails = () => {
                 </div>
               </div>
             </div>
+
+            {/* QR Ticket Section (visible when registered) */}
+            {isRegistered && registrationData?.qrPayload && (
+              <div className="bg-white dark:bg-navy-200 rounded-3xl p-8 md:p-10 shadow-sm border border-gray-100 dark:border-navy-400/30">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-cream-500 mb-6 flex items-center gap-3">
+                  <span className="w-1.5 h-8 bg-cream-300 rounded-full"></span>
+                  Your Ticket
+                </h2>
+                <QRTicket
+                  event={event}
+                  registration={registrationData}
+                  qrPayload={registrationData.qrPayload}
+                />
+              </div>
+            )}
           </div>
 
           {/* Right Column - Registration Card */}
@@ -264,6 +419,23 @@ const EventDetails = () => {
                     </div>
                   )}
 
+                  {/* Price */}
+                  <div className="flex items-start gap-4">
+                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${
+                      event.isFree
+                        ? "bg-steel-500/10 dark:bg-steel-400/20 text-steel-400 dark:text-steel-500"
+                        : "bg-cream-700 dark:bg-cream-100/10 text-cream-200 dark:text-cream-400"
+                    }`}>
+                      <FaRupeeSign size={20} />
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500 dark:text-steel-500 font-medium">Ticket Price</p>
+                      <p className="text-base font-semibold text-gray-900 dark:text-cream-500 mt-0.5">
+                        {event.isFree ? "Free" : `₹${event.price}`}
+                      </p>
+                    </div>
+                  </div>
+
                   <div className="flex items-start gap-4">
                     <div className="w-12 h-12 rounded-2xl bg-brick-500/10 dark:bg-brick-500/20 flex items-center justify-center text-brick-500 dark:text-brick-700 shrink-0">
                       <FaUsers size={20} />
@@ -313,6 +485,19 @@ const EventDetails = () => {
                         You can cancel your registration anytime before the event.
                       </p>
                     </>
+                  ) : isRegistered && isPaidRegistration ? (
+                    <>
+                      <button
+                        onClick={() => setShowTicket(!showTicket)}
+                        className="w-full py-4 rounded-2xl font-bold text-lg transition-all transform active:scale-95 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-2 border-green-500/30 hover:bg-green-100 dark:hover:bg-green-900/30"
+                      >
+                        <FaTicketAlt className="inline mr-2" />
+                        {showTicket ? "Hide Ticket" : "View Ticket"}
+                      </button>
+                      <p className="text-center text-xs text-gray-500 dark:text-steel-400">
+                        Payment confirmed. Non-refundable ticket.
+                      </p>
+                    </>
                   ) : canRegister ? (
                     <>
                       <button
@@ -320,10 +505,12 @@ const EventDetails = () => {
                         onClick={handleRegister}
                         className="w-full py-4 rounded-2xl font-bold text-lg transition-all transform active:scale-95 bg-brick-500 text-white hover:bg-brick-400 shadow-lg shadow-brick-500/25 dark:shadow-none hover:shadow-xl disabled:opacity-60"
                       >
-                        {regLoading ? "Processing..." : "Register for Event"}
+                        {regLoading ? "Processing..." : event.isFree ? "Register for Event" : `Pay ₹${event.price} & Register`}
                       </button>
                       <p className="text-center text-xs text-gray-500 dark:text-steel-400">
-                        By registering, you agree to the campus event policies.
+                        {event.isFree
+                          ? "By registering, you agree to the campus event policies."
+                          : "You'll be redirected to Razorpay for secure payment."}
                       </p>
                     </>
                   ) : (
@@ -335,12 +522,88 @@ const EventDetails = () => {
                     </button>
                   )}
                 </div>
+
+                {/* Inline ticket view for paid events */}
+                {showTicket && isRegistered && registrationData?.qrPayload && (
+                  <div className="pt-4">
+                    <QRTicket
+                      event={event}
+                      registration={registrationData}
+                      qrPayload={registrationData.qrPayload}
+                    />
+                  </div>
+                )}
               </div>
             </div>
           </div>
 
         </div>
       </div>
+
+      {/* Payment Simulator Modal */}
+      {showPaymentSim && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-navy-200 rounded-3xl p-8 max-w-md w-full border border-gray-100 dark:border-navy-400/30 shadow-2xl space-y-6 zoom-in-95 duration-200">
+            <div className="text-center space-y-2">
+              <div className="w-16 h-16 bg-cream-300/20 text-cream-300 rounded-2xl flex items-center justify-center mx-auto mb-2 text-2xl font-bold">
+                💳
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-cream-500">
+                Payment Simulator
+              </h3>
+              <p className="text-sm text-gray-500 dark:text-steel-500">
+                Razorpay API credentials are not configured or invalid on the server. The application has entered simulated payment mode.
+              </p>
+            </div>
+            
+            <div className="bg-cream-900 dark:bg-navy-300/30 rounded-2xl p-5 space-y-2.5 text-sm text-left">
+              <div className="flex justify-between">
+                <span className="text-gray-400 font-medium">Order ID:</span>
+                <span className="font-semibold text-gray-900 dark:text-cream-500">{simOrderId}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-400 font-medium">Amount:</span>
+                <span className="font-semibold text-gray-900 dark:text-cream-500">₹{event.price}</span>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={async () => {
+                  setShowPaymentSim(false);
+                  const result = await verifyPayment({
+                    razorpay_order_id: simOrderId,
+                    razorpay_payment_id: `mock_pay_${Date.now()}`,
+                    razorpay_signature: "mock_signature",
+                  });
+                  if (result) {
+                    setIsRegistered(true);
+                    await fetchEvent();
+                    await fetchRegistrationStatus();
+                    setShowTicket(true);
+                  }
+                  setRegLoading(false);
+                }}
+                className="w-full py-3.5 rounded-2xl font-bold text-base text-center bg-green-600 text-white hover:bg-green-500 transition-all shadow-lg shadow-green-600/20 active:scale-[0.98]"
+              >
+                Simulate Success Payment
+              </button>
+              <button
+                onClick={async () => {
+                  setShowPaymentSim(false);
+                  await handlePaymentFailure(simOrderId);
+                  await fetchEvent();
+                  setRegLoading(false);
+                }}
+                className="w-full py-3.5 rounded-2xl font-bold text-base text-center bg-brick-500 text-white hover:bg-brick-400 transition-all shadow-lg shadow-brick-500/20 active:scale-[0.98]"
+              >
+                Simulate Cancel / Failure
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };

@@ -29,6 +29,8 @@ export const createEvent = asyncHandler(async (req, res) => {
     status,
     organizerName,
     contactInfo,
+    isFree,
+    price,
   } = req.body;
 
   // Validation
@@ -41,6 +43,14 @@ export const createEvent = asyncHandler(async (req, res) => {
   if (!organizerName || !organizerName.trim()) errors.push("Organizer name is required");
   if (!contactInfo || !contactInfo.trim()) errors.push("Contact info is required");
   if (!req.file) errors.push("Banner image is required");
+
+  // Price validation
+  const eventIsFree = isFree === "true" || isFree === true;
+  if (!eventIsFree) {
+    if (!price || Number(price) <= 0) {
+      errors.push("Ticket price is required for paid events and must be greater than 0");
+    }
+  }
 
   if (errors.length > 0) {
     res.status(400);
@@ -61,6 +71,8 @@ export const createEvent = asyncHandler(async (req, res) => {
     totalSeats: Number(totalSeats),
     availableSeats:
       availableSeats !== undefined ? Number(availableSeats) : Number(totalSeats),
+    isFree: eventIsFree,
+    price: eventIsFree ? 0 : Number(price),
     status: status || "upcoming",
     createdBy: req.user._id,
   });
@@ -110,6 +122,8 @@ export const updateEvent = asyncHandler(async (req, res) => {
     status,
     organizerName,
     contactInfo,
+    isFree,
+    price,
   } = req.body;
 
   // Validation for update (only validate fields that are provided)
@@ -120,6 +134,14 @@ export const updateEvent = asyncHandler(async (req, res) => {
   if (totalSeats !== undefined && Number(totalSeats) < 1) errors.push("Total seats must be at least 1");
   if (organizerName !== undefined && !organizerName.trim()) errors.push("Organizer name cannot be empty");
   if (contactInfo !== undefined && !contactInfo.trim()) errors.push("Contact info cannot be empty");
+
+  // Price validation for update
+  if (isFree !== undefined) {
+    const eventIsFree = isFree === "true" || isFree === true;
+    if (!eventIsFree && (price === undefined || Number(price) <= 0)) {
+      errors.push("Ticket price is required for paid events and must be greater than 0");
+    }
+  }
 
   if (errors.length > 0) {
     res.status(400);
@@ -143,6 +165,15 @@ export const updateEvent = asyncHandler(async (req, res) => {
   event.status = status ?? event.status;
   event.organizerName = organizerName ?? event.organizerName;
   event.contactInfo = contactInfo ?? event.contactInfo;
+
+  // Update pricing fields
+  if (isFree !== undefined) {
+    const eventIsFree = isFree === "true" || isFree === true;
+    event.isFree = eventIsFree;
+    event.price = eventIsFree ? 0 : Number(price);
+  } else if (price !== undefined) {
+    event.price = Number(price);
+  }
 
   const updatedEvent = await event.save();
   res.json(updatedEvent);
@@ -199,11 +230,22 @@ export const getAdminDashboardStats = asyncHandler(async (req, res) => {
     date: { $lt: new Date() },
   });
 
+  const totalRevenue = await Registration.aggregate([
+    { $match: { paymentStatus: "paid" } },
+    { $group: { _id: null, total: { $sum: "$amountPaid" } } },
+  ]);
+
+  const paidEvents = await Event.countDocuments({ isFree: false });
+  const freeEvents = await Event.countDocuments({ isFree: true });
+
   res.json({
     totalEvents,
     totalRegistrations,
     totalUsers,
     upcomingEvents,
     completedEvents,
+    totalRevenue: totalRevenue[0]?.total || 0,
+    paidEvents,
+    freeEvents,
   });
 });

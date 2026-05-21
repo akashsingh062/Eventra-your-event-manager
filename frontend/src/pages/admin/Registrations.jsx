@@ -111,7 +111,10 @@ const AdminRegistrations = () => {
                     Event
                   </th>
                   <th className="px-6 py-4 text-left font-semibold text-gray-700 dark:text-gray-300 text-xs uppercase tracking-wider">
-                    Event Date
+                    Payment
+                  </th>
+                  <th className="px-6 py-4 text-left font-semibold text-gray-700 dark:text-gray-300 text-xs uppercase tracking-wider">
+                    Check-In
                   </th>
                   <th className="px-6 py-4 text-left font-semibold text-gray-700 dark:text-gray-300 text-xs uppercase tracking-wider">
                     Registered
@@ -135,10 +138,34 @@ const AdminRegistrations = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <p className="font-medium text-gray-900 dark:text-white">{reg.event?.title}</p>
+                      <div>
+                        <p className="font-medium text-gray-900 dark:text-white">{reg.event?.title}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          {dayjs(reg.event?.date).format("DD MMM YYYY")}
+                        </p>
+                      </div>
                     </td>
-                    <td className="px-6 py-4 text-gray-600 dark:text-gray-400">
-                      {dayjs(reg.event?.date).format("DD MMM YYYY")}
+                    <td className="px-6 py-4">
+                      <span
+                        className={`px-2.5 py-1 text-xs font-semibold rounded-full uppercase tracking-wider ${
+                          reg.paymentStatus === "paid" ? "bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400" :
+                          reg.paymentStatus === "free" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400" :
+                          "bg-amber-100 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400"
+                        }`}
+                      >
+                        {reg.paymentStatus || "free"}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span
+                        className={`px-2.5 py-1 text-xs font-semibold rounded-full uppercase tracking-wider ${
+                          reg.checkedIn
+                            ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400"
+                            : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"
+                        }`}
+                      >
+                        {reg.checkedIn ? "Checked In" : "Pending"}
+                      </span>
                     </td>
                     <td className="px-6 py-4 text-gray-600 dark:text-gray-400">
                       {dayjs(reg.createdAt).format("DD MMM YYYY, h:mm A")}
@@ -175,14 +202,34 @@ const AdminRegistrations = () => {
                   </div>
                 </div>
 
-                <div className="border-t border-gray-100 dark:border-gray-800 pt-3 space-y-2">
+                <div className="border-t border-gray-100 dark:border-gray-800 pt-3 space-y-3">
                   <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                     <FaCalendarAlt className="text-navy-600 text-xs" />
                     <span className="font-medium text-gray-900 dark:text-white">{reg.event?.title}</span>
                   </div>
-                  <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-                    <span>Event: {dayjs(reg.event?.date).format("DD MMM YYYY")}</span>
-                    <span>Joined: {dayjs(reg.createdAt).format("DD MMM")}</span>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-gray-500">Event Date: {dayjs(reg.event?.date).format("DD MMM YYYY")}</span>
+                    <span className="text-gray-500">Joined: {dayjs(reg.createdAt).format("DD MMM YYYY")}</span>
+                  </div>
+                  <div className="flex gap-2 pt-1">
+                    <span
+                      className={`px-2 py-0.5 text-[10px] font-bold uppercase rounded-full tracking-wider ${
+                        reg.paymentStatus === "paid" ? "bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400" :
+                        reg.paymentStatus === "free" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400" :
+                        "bg-amber-100 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400"
+                      }`}
+                    >
+                      {reg.paymentStatus || "free"}
+                    </span>
+                    <span
+                      className={`px-2 py-0.5 text-[10px] font-bold uppercase rounded-full tracking-wider ${
+                        reg.checkedIn
+                          ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400"
+                          : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"
+                      }`}
+                    >
+                      {reg.checkedIn ? "Checked In" : "Pending"}
+                    </span>
                   </div>
                 </div>
 

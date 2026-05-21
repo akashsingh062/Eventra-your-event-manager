@@ -22,6 +22,8 @@ const ManageEvents = () => {
   const [editingId, setEditingId] = useState(null);
   const [organizerName, setOrganizerName] = useState("");
   const [contactInfo, setContactInfo] = useState("");
+  const [isFree, setIsFree] = useState(true);
+  const [price, setPrice] = useState("");
   const [formErrors, setFormErrors] = useState([]);
 
   const fetchEvents = async () => {
@@ -52,6 +54,8 @@ const ManageEvents = () => {
     setEditingId(null);
     setOrganizerName("");
     setContactInfo("");
+    setIsFree(true);
+    setPrice("");
     setFormErrors([]);
   };
 
@@ -64,6 +68,9 @@ const ManageEvents = () => {
     if (!totalSeats || Number(totalSeats) < 1) errors.push("Total seats must be at least 1");
     if (!organizerName.trim()) errors.push("Organizer name is required");
     if (!contactInfo.trim()) errors.push("Contact info is required");
+    if (!isFree && (!price || Number(price) <= 0)) {
+      errors.push("Ticket price is required for paid events and must be greater than 0");
+    }
     if (!description.trim()) errors.push("Description is required");
     if (!isEdit && !banner && !bannerPreview) errors.push("Banner image is required");
     return errors;
@@ -89,6 +96,8 @@ const ManageEvents = () => {
       formData.append("status", status);
       formData.append("organizerName", organizerName);
       formData.append("contactInfo", contactInfo);
+      formData.append("isFree", isFree);
+      formData.append("price", isFree ? 0 : Number(price));
       if (banner) {
         formData.append("banner", banner);
       }
@@ -136,6 +145,8 @@ const ManageEvents = () => {
     setStatus(event.status || "upcoming");
     setOrganizerName(event.organizerName || "");
     setContactInfo(event.contactInfo || "");
+    setIsFree(event.isFree !== undefined ? event.isFree : true);
+    setPrice(event.price || "");
     setBanner(null);
     setBannerPreview(event.banner);
     setFormErrors([]);
@@ -336,6 +347,55 @@ const ManageEvents = () => {
                 </div>
               </div>
 
+              {/* Row: Free/Paid Toggle & Ticket Price */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className={labelClass}>Pricing Type</label>
+                  <div className="flex items-center gap-4 mt-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsFree(true);
+                        setPrice("");
+                      }}
+                      className={`flex-1 py-3 px-4 rounded-xl font-semibold text-sm border transition-all ${
+                        isFree
+                          ? "bg-navy-500/10 border-navy-600 text-navy-600 dark:bg-navy-500/20 dark:text-steel-500 dark:border-steel-500"
+                          : "bg-gray-50 dark:bg-navy-300/10 border-gray-200 dark:border-navy-400/20 text-gray-600 dark:text-gray-400"
+                      }`}
+                    >
+                      🎟 Free Event
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsFree(false)}
+                      className={`flex-1 py-3 px-4 rounded-xl font-semibold text-sm border transition-all ${
+                        !isFree
+                          ? "bg-amber-500/10 border-amber-500 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400 dark:border-amber-500"
+                          : "bg-gray-50 dark:bg-navy-300/10 border-gray-200 dark:border-navy-400/20 text-gray-600 dark:text-gray-400"
+                      }`}
+                    >
+                      💳 Paid Event
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className={labelClass}>
+                    Ticket Price (INR) {!isFree && <span className="text-red-500">*</span>}
+                  </label>
+                  <input
+                    type="number"
+                    placeholder={isFree ? "Free (Price: 0)" : "e.g. 499"}
+                    className={`${inputClass} ${isFree ? "opacity-50 cursor-not-allowed bg-gray-100 dark:bg-navy-300/10" : ""}`}
+                    value={price}
+                    onChange={(e) => setPrice(e.target.value)}
+                    disabled={isFree}
+                    min="1"
+                  />
+                </div>
+              </div>
+
               {/* Row 3: Banner Upload */}
               <div>
                 <label className={labelClass}>
@@ -470,15 +530,26 @@ const ManageEvents = () => {
                           <h3 className="font-bold text-gray-900 dark:text-white text-lg leading-snug">
                             {event.title}
                           </h3>
-                          <span
-                            className={`shrink-0 text-[11px] px-3 py-1 rounded-full font-semibold uppercase tracking-wider ${
-                              isPast
-                                ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400"
-                                : "bg-navy-500/10 dark:bg-navy-500/20 text-navy-600 dark:text-steel-500"
-                            }`}
-                          >
-                            {isPast ? "Completed" : "Upcoming"}
-                          </span>
+                          <div className="flex gap-2 shrink-0">
+                            <span
+                              className={`text-[11px] px-3 py-1 rounded-full font-semibold uppercase tracking-wider ${
+                                event.isFree
+                                  ? "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400"
+                                  : "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400"
+                              }`}
+                            >
+                              {event.isFree ? "Free" : `₹${event.price}`}
+                            </span>
+                            <span
+                              className={`text-[11px] px-3 py-1 rounded-full font-semibold uppercase tracking-wider ${
+                                isPast
+                                  ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400"
+                                  : "bg-navy-500/10 dark:bg-navy-500/20 text-navy-600 dark:text-steel-500"
+                              }`}
+                            >
+                              {isPast ? "Completed" : "Upcoming"}
+                            </span>
+                          </div>
                         </div>
 
                         <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-gray-500 dark:text-gray-400 mb-4">

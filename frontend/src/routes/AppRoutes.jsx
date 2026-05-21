@@ -13,6 +13,7 @@ import ProtectedRoute from "../components/common/ProtectedRoute";
 import AdminDashboard from "../pages/admin/Dashboard";
 import ManageEvents from "../pages/admin/ManageEvents";
 import AdminRegistrations from "../pages/admin/Registrations.jsx";
+import CheckIn from "../pages/admin/CheckIn";
 
 const AppRoutes = () => {
   return (
@@ -58,6 +59,15 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute role="admin">
             <AdminRegistrations />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/admin/checkin"
+        element={
+          <ProtectedRoute role="admin">
+            <CheckIn />
           </ProtectedRoute>
         }
       />

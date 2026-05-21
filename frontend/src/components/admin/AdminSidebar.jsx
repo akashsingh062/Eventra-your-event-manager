@@ -3,6 +3,7 @@ import {
   LayoutDashboard,
   CalendarPlus,
   Users,
+  Scan,
   LogOut,
   Menu,
   X,
@@ -100,6 +101,15 @@ const AdminSidebar = () => {
           >
             <Users className="w-5 h-5" />
             Registrations
+          </NavLink>
+
+          <NavLink
+            to="/admin/checkin"
+            onClick={() => setOpen(false)}
+            className={navLinkClass}
+          >
+            <Scan className="w-5 h-5" />
+            Event Check-In
           </NavLink>
         </nav>
 

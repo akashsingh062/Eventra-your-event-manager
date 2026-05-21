@@ -1,68 +1,103 @@
 import mongoose from "mongoose";
+import crypto from "crypto";
 import asyncHandler from "../utils/asyncHandler.js";
 import Event from "../models/Event.js";
 import Registration from "../models/Registration.js";
 
-// @desc    Register logged-in user for an event
+/**
+ * Generate a secure, unique QR token for a registration.
+ */
+const generateQRToken = () => {
+  return crypto.randomBytes(32).toString("hex");
+};
+
+/**
+ * Build the QR payload that gets encoded into the QR code image.
+ * Contains enough info for verification but no raw sensitive data.
+ */
+const buildQRPayload = (registration) => {
+  const eventId = registration.event._id || registration.event;
+  return JSON.stringify({
+    t: registration.qrToken,       // verification token
+    r: registration._id.toString(), // registration ID
+    e: eventId.toString(), // event ID
+  });
+};
+
+// @desc    Register logged-in user for an event (FREE events only)
 // @route   POST /api/registrations/:eventId
 // @access  Private (student)
 export const registerForEvent = asyncHandler(async (req, res) => {
   const { eventId } = req.params;
   const userId = req.user._id;
 
-  const session = await mongoose.startSession();
-  session.startTransaction();
+  // Check if event exists
+  const event = await Event.findById(eventId);
+  if (!event) {
+    res.status(404);
+    throw new Error("Event not found");
+  }
+
+  // Paid events must go through payment flow
+  if (!event.isFree) {
+    res.status(400);
+    throw new Error("This is a paid event. Please use the payment flow to register.");
+  }
+
+  if (event.status === "completed") {
+    res.status(400);
+    throw new Error("Event is already completed");
+  }
+
+  if (event.availableSeats <= 0) {
+    res.status(400);
+    throw new Error("No seats available");
+  }
+
+  // Check for existing registration
+  const existingReg = await Registration.findOne({ user: userId, event: eventId });
+  if (existingReg) {
+    res.status(400);
+    throw new Error("You are already registered for this event");
+  }
+
+  const qrToken = generateQRToken();
+
+  // Use atomic operations (no transaction required — works without replica set)
+  const updatedEvent = await Event.findOneAndUpdate(
+    { _id: eventId, availableSeats: { $gt: 0 } },
+    { $inc: { availableSeats: -1 } },
+    { new: true }
+  );
+
+  if (!updatedEvent) {
+    res.status(400);
+    throw new Error("No seats available");
+  }
 
   try {
-    const event = await Event.findById(eventId).session(session);
-
-    if (!event) {
-      res.status(404);
-      throw new Error("Event not found");
-    }
-
-    if (event.status === "completed") {
-      res.status(400);
-      throw new Error("Event is already completed");
-    }
-
-    if (event.availableSeats <= 0) {
-      res.status(400);
-      throw new Error("No seats available");
-    }
-
-    // Create registration (DB unique index prevents duplicates)
-    const registration = await Registration.create(
-      [
-        {
-          user: userId,
-          event: eventId,
-        },
-      ],
-      { session }
-    );
-
-    // Decrease available seats
-    event.availableSeats -= 1;
-    await event.save({ session });
-
-    await session.commitTransaction();
-    session.endSession();
+    const registration = await Registration.create({
+      user: userId,
+      event: eventId,
+      paymentStatus: "free",
+      ticketStatus: "active",
+      qrToken,
+      amountPaid: 0,
+    });
 
     res.status(201).json({
       message: "Successfully registered for event",
-      registration: registration[0],
+      registration,
+      qrPayload: buildQRPayload(registration),
     });
   } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
+    // Rollback seat decrement if registration failed
+    await Event.findByIdAndUpdate(eventId, { $inc: { availableSeats: 1 } });
 
-    // Handle duplicate registration error
     if (error.code === 11000) {
       res.status(400);
       throw new Error("You are already registered for this event");
     }
-
     throw error;
   }
 });
@@ -74,53 +109,56 @@ export const unregisterFromEvent = asyncHandler(async (req, res) => {
   const { eventId } = req.params;
   const userId = req.user._id;
 
-  const session = await mongoose.startSession();
-  session.startTransaction();
+  // Find the registration
+  const registration = await Registration.findOne({
+    user: userId,
+    event: eventId,
+  });
 
-  try {
-    // Find the registration
-    const registration = await Registration.findOne({
-      user: userId,
-      event: eventId,
-    }).session(session);
-
-    if (!registration) {
-      res.status(404);
-      throw new Error("You are not registered for this event");
-    }
-
-    // Find the event to restore seat
-    const event = await Event.findById(eventId).session(session);
-
-    if (!event) {
-      res.status(404);
-      throw new Error("Event not found");
-    }
-
-    // Prevent unregistering from completed events
-    if (event.status === "completed") {
-      res.status(400);
-      throw new Error("Cannot unregister from a completed event");
-    }
-
-    // Delete the registration
-    await registration.deleteOne({ session });
-
-    // Restore available seat (but don't exceed totalSeats)
-    event.availableSeats = Math.min(event.availableSeats + 1, event.totalSeats);
-    await event.save({ session });
-
-    await session.commitTransaction();
-    session.endSession();
-
-    res.json({
-      message: "Successfully unregistered from event",
-    });
-  } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
-    throw error;
+  if (!registration) {
+    res.status(404);
+    throw new Error("You are not registered for this event");
   }
+
+  // Prevent unregistering from paid events (no refund flow)
+  if (registration.paymentStatus === "paid") {
+    res.status(400);
+    throw new Error("Cannot unregister from a paid event. Please contact the organizer for refunds.");
+  }
+
+  // Find the event
+  const event = await Event.findById(eventId);
+  if (!event) {
+    res.status(404);
+    throw new Error("Event not found");
+  }
+
+  // Prevent unregistering from completed events
+  if (event.status === "completed") {
+    res.status(400);
+    throw new Error("Cannot unregister from a completed event");
+  }
+
+  // Delete registration (atomic, no transaction needed)
+  await Registration.findByIdAndDelete(registration._id);
+
+  // Restore seat (atomic, capped at totalSeats)
+  await Event.findOneAndUpdate(
+    { _id: eventId },
+    [
+      {
+        $set: {
+          availableSeats: {
+            $min: [{ $add: ["$availableSeats", 1] }, "$totalSeats"],
+          },
+        },
+      },
+    ]
+  );
+
+  res.json({
+    message: "Successfully unregistered from event",
+  });
 });
 
 // @desc    Check if user is registered for an event
@@ -135,10 +173,27 @@ export const checkRegistration = asyncHandler(async (req, res) => {
     event: eventId,
   });
 
-  res.json({
-    isRegistered: Boolean(registration),
-    registrationId: registration?._id || null,
-  });
+  if (registration) {
+    res.json({
+      isRegistered: true,
+      registrationId: registration._id,
+      paymentStatus: registration.paymentStatus,
+      ticketStatus: registration.ticketStatus,
+      qrToken: registration.qrToken,
+      checkedIn: registration.checkedIn,
+      qrPayload: buildQRPayload(registration),
+    });
+  } else {
+    res.json({
+      isRegistered: false,
+      registrationId: null,
+      paymentStatus: null,
+      ticketStatus: null,
+      qrToken: null,
+      checkedIn: false,
+      qrPayload: null,
+    });
+  }
 });
 
 // @desc    Get logged-in user's registrations
@@ -151,11 +206,18 @@ export const getMyRegistrations = asyncHandler(async (req, res) => {
     .populate({
       path: "event",
       select:
-        "title description date location banner totalSeats availableSeats status organizerName contactInfo",
+        "title description date location banner totalSeats availableSeats status organizerName contactInfo isFree price",
     })
     .sort({ createdAt: -1 });
 
-  res.json(registrations);
+  // Add qrPayload to each registration
+  const registrationsWithQR = registrations.map((reg) => {
+    const regObj = reg.toObject();
+    regObj.qrPayload = buildQRPayload(reg);
+    return regObj;
+  });
+
+  res.json(registrationsWithQR);
 });
 
 
@@ -171,7 +233,7 @@ export const getAllRegistrations = asyncHandler(async (req, res) => {
     .populate("user", "name email")
     .populate(
       "event",
-      "title date location totalSeats availableSeats status"
+      "title date location totalSeats availableSeats status isFree price"
     )
     .sort({ createdAt: -1 });
 
@@ -188,7 +250,7 @@ export const getRegistrationsByEvent = asyncHandler(async (req, res) => {
     .populate("user", "name email")
     .populate(
       "event",
-      "title date location totalSeats availableSeats status"
+      "title date location totalSeats availableSeats status isFree price"
     )
     .sort({ createdAt: -1 });
 
@@ -206,12 +268,19 @@ export const deleteRegistration = asyncHandler(async (req, res) => {
     throw new Error("Registration not found");
   }
 
-  // Restore seat count
-  const event = await Event.findById(registration.event);
-  if (event) {
-    event.availableSeats = Math.min(event.availableSeats + 1, event.totalSeats);
-    await event.save();
-  }
+  // Restore seat count (atomic)
+  await Event.findOneAndUpdate(
+    { _id: registration.event },
+    [
+      {
+        $set: {
+          availableSeats: {
+            $min: [{ $add: ["$availableSeats", 1] }, "$totalSeats"],
+          },
+        },
+      },
+    ]
+  );
 
   await registration.deleteOne();
 

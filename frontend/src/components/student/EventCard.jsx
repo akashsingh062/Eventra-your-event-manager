@@ -47,6 +47,17 @@ const EventCard = ({ event, onRegister, isListView = false }) => {
           alt={title}
           className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
         />
+        <div className="absolute top-4 left-4 z-20">
+          <span
+            className={`px-3 py-1 text-xs font-semibold rounded-full shadow-sm backdrop-blur-md ${
+              event.isFree
+                ? "bg-steel-800/80 text-white border border-white/10"
+                : "bg-amber-500/90 text-white border border-amber-400/20"
+            }`}
+          >
+            {event.isFree ? "Free" : `₹${event.price}`}
+          </span>
+        </div>
         <div className="absolute top-4 right-4 z-20">
           <span
             className={`px-3 py-1 text-xs font-semibold rounded-full shadow-sm backdrop-blur-md ${

@@ -1,0 +1,13 @@
+[2026-05-21T04:27:19.771Z] undefined
+Stack: undefined
+
+[2026-05-21T04:27:32.187Z] Message: Authentication failed
+Details: {
+  "statusCode": 401,
+  "error": {
+    "code": "BAD_REQUEST_ERROR",
+    "description": "Authentication failed"
+  }
+}
+Stack: No stack trace
+
