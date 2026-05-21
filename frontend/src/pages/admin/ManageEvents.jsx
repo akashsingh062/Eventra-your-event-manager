@@ -138,7 +138,7 @@ const ManageEvents = () => {
   const handleEdit = (event) => {
     setEditingId(event._id);
     setTitle(event.title);
-    setDate(event.date.slice(0, 10));
+    setDate(event.date ? event.date.slice(0, 10) : "");
     setLocation(event.location);
     setTotalSeats(event.totalSeats);
     setDescription(event.description);
