@@ -6,7 +6,7 @@ const MyRegistrations = () => {
   const {
     myRegistrations,
     fetchMyRegistrations,
-    loading,
+    registrationsLoading: loading,
   } = useEvent();
 
   useEffect(() => {

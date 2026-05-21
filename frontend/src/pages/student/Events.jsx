@@ -9,7 +9,7 @@ const Events = () => {
     events,
     fetchEvents,
     registerForEvent,
-    loading,
+    eventsLoading: loading,
   } = useEvent();
 
   const [searchQuery, setSearchQuery] = useState("");

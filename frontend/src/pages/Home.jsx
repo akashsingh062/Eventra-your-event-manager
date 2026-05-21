@@ -6,7 +6,7 @@ import { useEvent } from "../context/EventContext";
 import EventCard from "../components/student/EventCard";
 
 const Home = () => {
-  const { events, fetchEvents, registerForEvent, loading } = useEvent();
+  const { events, fetchEvents, registerForEvent, eventsLoading: loading } = useEvent();
 
   useEffect(() => {
     fetchEvents();
