@@ -32,7 +32,7 @@ const ManageEvents = () => {
       const { data } = await api.get("/api/events");
       setEvents(data || []);
     } catch (err) {
-      console.error("Failed to load events");
+      toast.error(err.response?.data?.message || "Failed to load events");
     } finally {
       setLoading(false);
     }
@@ -130,8 +130,9 @@ const ManageEvents = () => {
     try {
       await api.delete(`/api/events/${id}`);
       setEvents((prev) => prev.filter((e) => e._id !== id));
+      toast.success("Event deleted successfully");
     } catch (err) {
-      console.error("Failed to delete event");
+      toast.error(err.response?.data?.message || "Failed to delete event");
     }
   };
 

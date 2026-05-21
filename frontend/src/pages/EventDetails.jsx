@@ -6,6 +6,7 @@ import { FaCalendarAlt, FaMapMarkerAlt, FaUsers, FaArrowLeft, FaClock, FaCheckCi
 import { useEvent } from "../context/EventContext";
 import { useAuth } from "../context/AuthContext";
 import QRTicket from "../components/student/QRTicket";
+import { toast } from "react-toastify";
 
 const EventDetails = () => {
   const { id } = useParams();
@@ -34,7 +35,7 @@ const EventDetails = () => {
       setEvent(data);
     } catch (err) {
       setError("Failed to load event details.");
-      console.log(err);
+      toast.error(err.response?.data?.message || "Failed to load event details.");
     }
   };
 

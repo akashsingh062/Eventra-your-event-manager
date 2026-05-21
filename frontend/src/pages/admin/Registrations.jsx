@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { FaTrash, FaSearch, FaUsers, FaCalendarAlt } from "react-icons/fa";
 import dayjs from "dayjs";
 import api from "../../services/api";
+import { toast } from "react-toastify";
 
 const AdminRegistrations = () => {
   const [registrations, setRegistrations] = useState([]);
@@ -13,7 +14,7 @@ const AdminRegistrations = () => {
       const { data } = await api.get("/api/admin/registrations");
       setRegistrations(data);
     } catch (error) {
-      console.error("Failed to fetch registrations", error);
+      toast.error(error.response?.data?.message || "Failed to fetch registrations");
     } finally {
       setLoading(false);
     }
@@ -24,8 +25,9 @@ const AdminRegistrations = () => {
     try {
       await api.delete(`/api/admin/registrations/${id}`);
       setRegistrations((prev) => prev.filter((item) => item._id !== id));
+      toast.success("Registration deleted successfully");
     } catch (error) {
-      console.error("Failed to delete registration", error);
+      toast.error(error.response?.data?.message || "Failed to delete registration");
     }
   };
 

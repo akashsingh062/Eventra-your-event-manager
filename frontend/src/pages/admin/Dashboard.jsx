@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { FaCalendarAlt, FaUsers, FaTicketAlt, FaChartLine, FaCheckCircle, FaArrowRight, FaCog, FaClipboardList, FaRupeeSign, FaQrcode } from "react-icons/fa";
 import api from "../../services/api";
+import { toast } from "react-toastify";
 
 const Dashboard = () => {
   const [stats, setStats] = useState({
@@ -22,7 +23,7 @@ const Dashboard = () => {
       const { data } = await api.get("/api/admin/dashboard");
       setStats(data);
     } catch (error) {
-      console.error("Failed to load admin dashboard stats", error);
+      toast.error(error.response?.data?.message || "Failed to load admin dashboard stats");
     } finally {
       setLoading(false);
     }
