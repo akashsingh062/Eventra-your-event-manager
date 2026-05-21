@@ -78,6 +78,7 @@ export const createOrder = asyncHandler(async (req, res) => {
       amount: event.price * 100,
       currency: process.env.CURRENCY || "INR",
       registrationId: pendingReg._id,
+      simulated: pendingReg.razorpayOrderId.startsWith("mock_order_"),
     });
   }
 
@@ -99,6 +100,11 @@ export const createOrder = asyncHandler(async (req, res) => {
       },
     });
   } catch (error) {
+    if (process.env.NODE_ENV === "production") {
+      console.error("Razorpay API order creation failed in production:", error);
+      res.status(500);
+      throw new Error("Payment gateway integration failed");
+    }
     console.warn("Razorpay API order creation failed, falling back to simulated order mode:", error.message || error);
     isSimulated = true;
     order = {
@@ -161,8 +167,10 @@ export const verifyPayment = asyncHandler(async (req, res) => {
     throw new Error("Missing payment verification data");
   }
 
-  // Handle mock orders (starts with mock_order_ or signature is mock_signature)
-  const isMockOrder = razorpay_order_id.startsWith("mock_order_") || razorpay_signature === "mock_signature";
+  // Handle mock orders (starts with mock_order_ or signature is mock_signature) - DEV/TEST ONLY
+  const isMockOrder =
+    process.env.NODE_ENV !== "production" &&
+    (razorpay_order_id.startsWith("mock_order_") || razorpay_signature === "mock_signature");
 
   if (!isMockOrder) {
     // Verify signature using HMAC SHA256
