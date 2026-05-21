@@ -2,23 +2,28 @@ import dayjs from "dayjs";
 import { FaCalendarAlt, FaMapMarkerAlt, FaArrowRight } from "react-icons/fa";
 import { Link, useNavigate } from "react-router-dom";
 
-const MyEventCard = ({ event }) => {
+const MyEventCard = ({ event, onViewTicket }) => {
   const navigate = useNavigate();
   // 🔥 FIX: backend sends registration object, real event is nested
   const actualEvent = event.event || event;
   const isPastEvent = dayjs(actualEvent.date).isBefore(dayjs(), "day");
-  const isFull = actualEvent.availableSeats === 0;
+  let ticketStatusText = "Upcoming";
+  let ticketStatusClass = "bg-navy-500/90 text-white border border-white/10";
 
-  let statusLabel = "Upcoming";
-
-  if (isPastEvent || actualEvent.status === "completed") {
-    statusLabel = "Completed";
-  } else if (isFull) {
-    statusLabel = "Full";
+  if (event.checkedIn) {
+    ticketStatusText = "Attended";
+    ticketStatusClass = "bg-emerald-600/90 text-white border border-emerald-500/20";
+  } else if (isPastEvent || actualEvent.status === "completed") {
+    ticketStatusText = "Missed";
+    ticketStatusClass = "bg-brick-600/95 text-white border border-brick-500/20";
   }
 
   const handleCardClick = () => {
-    navigate(`/events/${actualEvent._id}`);
+    if (onViewTicket) {
+      onViewTicket(event);
+    } else {
+      navigate(`/events/${actualEvent._id}`);
+    }
   };
 
   return (
@@ -68,19 +73,10 @@ const MyEventCard = ({ event }) => {
         </div>
         <div className="absolute top-4 right-4 z-20 flex flex-col gap-2 items-end">
           <span
-            className={`px-3 py-1 text-xs font-semibold rounded-full shadow-sm backdrop-blur-md ${
-              statusLabel === "Completed" ? "bg-green-500/90 text-white" :
-              statusLabel === "Full" ? "bg-brick-500/90 text-white" :
-              "bg-cream-500/90 text-navy-500 dark:bg-navy-300/90 dark:text-cream-500"
-            }`}
+            className={`px-3 py-1 text-xs font-semibold rounded-full shadow-sm backdrop-blur-md ${ticketStatusClass}`}
           >
-            {statusLabel}
+            {ticketStatusText}
           </span>
-          {event.checkedIn && (
-            <span className="px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-wider bg-emerald-500 text-white rounded-full shadow-sm">
-              Checked In
-            </span>
-          )}
         </div>
       </div>
 
@@ -112,15 +108,25 @@ const MyEventCard = ({ event }) => {
         </div>
 
         {/* Action */}
-        <div className="mt-6 pt-4 border-t border-gray-50 dark:border-navy-400/30">
+        <div className="mt-6 pt-4 border-t border-gray-100 dark:border-navy-400/30 flex gap-3">
           <Link
             to={`/events/${actualEvent._id}`}
             onClick={(e) => e.stopPropagation()}
-            className="flex items-center justify-center gap-2 w-full py-2.5 bg-gray-50 dark:bg-navy-300/30 hover:bg-navy-500/10 dark:hover:bg-navy-500/20 text-gray-700 dark:text-steel-500 hover:text-navy-600 dark:hover:text-steel-700 text-sm font-semibold rounded-xl transition-colors group/btn"
+            className="flex items-center justify-center gap-1.5 flex-1 py-2.5 bg-gray-50 dark:bg-navy-300/30 hover:bg-navy-500/10 dark:hover:bg-navy-500/20 text-gray-700 dark:text-steel-600 hover:text-navy-600 dark:hover:text-steel-750 text-xs font-bold rounded-xl transition-colors"
           >
-            View Details
-            <FaArrowRight className="group-hover/btn:translate-x-1 transition-transform" />
+            Details
           </Link>
+          {onViewTicket && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onViewTicket(event);
+              }}
+              className="flex items-center justify-center gap-1.5 flex-1 py-2.5 bg-brick-500 hover:bg-brick-400 text-white text-xs font-bold rounded-xl shadow-md shadow-brick-500/10 transition-all hover:scale-102 active:scale-98 cursor-pointer"
+            >
+              View Ticket
+            </button>
+          )}
         </div>
       </div>
     </div>

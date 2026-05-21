@@ -25,7 +25,7 @@ const Register = () => {
       });
 
       if (success) {
-        navigate("/events");
+        navigate("/");
       }
     } finally {
       setSubmitting(false);

@@ -1,10 +1,10 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 
 import Home from "../pages/Home";
 import Login from "../pages/auth/Login";
 import Register from "../pages/auth/Register";
 import Events from "../pages/student/Events";
-import MyRegistrations from "../pages/student/MyRegistrations";
+import MyTickets from "../pages/student/MyTickets";
 import EventDetails from "../pages/EventDetails";
 import NotFound from "../pages/NotFound";
 
@@ -43,12 +43,16 @@ const AppRoutes = () => {
 
       {/* Student Protected Routes */}
       <Route
-        path="/my-registrations"
+        path="/my-tickets"
         element={
           <ProtectedRoute role="student">
-            <MyRegistrations />
+            <MyTickets />
           </ProtectedRoute>
         }
+      />
+      <Route
+        path="/my-registrations"
+        element={<Navigate to="/my-tickets" replace />}
       />
 
       {/* Admin Protected Routes */}

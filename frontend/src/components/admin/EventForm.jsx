@@ -7,7 +7,6 @@ const EventForm = ({
   setLocation,
   totalSeats,
   setTotalSeats,
-  banner,
   setBanner,
   description,
   setDescription,

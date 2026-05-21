@@ -35,7 +35,7 @@ const Home = () => {
     if (user) {
       fetchMyRegistrations();
     }
-  }, [user]);
+  }, [user, fetchEvents, fetchMyRegistrations]);
 
   const upcomingEvents = events.filter((event) => {
     const isPast = dayjs(event.date).isBefore(dayjs(), "day");
@@ -109,7 +109,7 @@ const Home = () => {
                   <FaSearch /> Explore Events
                 </Link>
                 <Link
-                  to="/my-registrations"
+                  to="/my-tickets"
                   className="px-6 py-3 bg-white/10 hover:bg-white/15 backdrop-blur-md text-white border border-white/20 hover:border-white/40 font-semibold rounded-2xl transition-all flex items-center gap-2 hover:scale-102 active:scale-98"
                 >
                   <FaTicketAlt /> My Tickets
@@ -230,7 +230,7 @@ const Home = () => {
                 <div className="flex justify-between items-center">
                   <h2 className="text-2xl font-bold text-gray-900 dark:text-white">My Registered Events</h2>
                   {myRegistrations.length > 3 && (
-                    <Link to="/my-registrations" className="text-sm font-semibold text-brick-500 hover:text-brick-400 transition-colors">
+                    <Link to="/my-tickets" className="text-sm font-semibold text-brick-500 hover:text-brick-400 transition-colors">
                       View All
                     </Link>
                   )}

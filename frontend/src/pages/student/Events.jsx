@@ -27,7 +27,7 @@ const Events = () => {
     if (user) {
       fetchMyRegistrations();
     }
-  }, [user]);
+  }, [user, fetchEvents, fetchMyRegistrations]);
 
 
 

@@ -83,7 +83,7 @@ const Navbar = () => {
           
           {/* Logo */}
           <div
-            onClick={() => navigate(isLoggedIn ? "/events" : "/")}
+            onClick={() => navigate("/")}
             className="flex items-center gap-2 cursor-pointer group"
           >
             <img
@@ -105,9 +105,9 @@ const Navbar = () => {
               </NavLink>
 
               {isLoggedIn && isStudent && (
-                <NavLink to="/my-registrations" className={navLinkClass}>
+                <NavLink to="/my-tickets" className={navLinkClass}>
                   <Ticket className="w-4 h-4" />
-                  My Registrations
+                  My Tickets
                 </NavLink>
               )}
 
@@ -205,11 +205,11 @@ const Navbar = () => {
                           Events
                         </NavLink>
                         <NavLink
-                          to="/my-registrations"
+                          to="/my-tickets"
                           className="flex items-center gap-3 px-3 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl transition-colors"
                         >
                           <Ticket className="w-4 h-4 text-gray-400" />
-                          My Registrations
+                          My Tickets
                         </NavLink>
                       </>
                     )}
@@ -325,9 +325,9 @@ const Navbar = () => {
                     <Calendar className="w-4 h-4 text-gray-400" />
                     Events
                   </NavLink>
-                  <NavLink to="/my-registrations" className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl transition-colors">
+                  <NavLink to="/my-tickets" className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl transition-colors">
                     <Ticket className="w-4 h-4 text-gray-400" />
-                    My Registrations
+                    My Tickets
                   </NavLink>
                 </>
               )}

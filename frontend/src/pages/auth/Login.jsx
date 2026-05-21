@@ -25,7 +25,7 @@ const Login = () => {
       });
 
       if (success) {
-        navigate("/events");
+        navigate(role === "admin" ? "/admin/dashboard" : "/");
       }
     } finally {
       setSubmitting(false);
