@@ -7,11 +7,11 @@ import AppRoutes from "./routes/AppRoutes";
 const App = () => {
   const { user } = useAuth();
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 transition-colors duration-200">
+    <div className="min-h-screen bg-cream-900 dark:bg-navy-100 text-gray-900 dark:text-gray-100 transition-colors duration-200">
       {user?.role === "admin" ? (
         <div className="flex">
           <AdminSidebar />
-          <main className="flex-1 ml-64 pb-32 pt-16">
+          <main className="flex-1 ml-0 md:ml-64 pb-32 pt-6 min-h-screen">
             <AppRoutes />
           </main>
         </div>

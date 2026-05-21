@@ -27,32 +27,40 @@ export const createEvent = asyncHandler(async (req, res) => {
     totalSeats,
     availableSeats,
     status,
+    organizerName,
+    contactInfo,
   } = req.body;
 
-  if (
-    !title ||
-    !description ||
-    !date ||
-    !location ||
-    !totalSeats ||
-    !req.file
-  ) {
+  // Validation
+  const errors = [];
+  if (!title || !title.trim()) errors.push("Event title is required");
+  if (!description || !description.trim()) errors.push("Description is required");
+  if (!date) errors.push("Event date is required");
+  if (!location || !location.trim()) errors.push("Location is required");
+  if (!totalSeats || Number(totalSeats) < 1) errors.push("Total seats must be at least 1");
+  if (!organizerName || !organizerName.trim()) errors.push("Organizer name is required");
+  if (!contactInfo || !contactInfo.trim()) errors.push("Contact info is required");
+  if (!req.file) errors.push("Banner image is required");
+
+  if (errors.length > 0) {
     res.status(400);
-    throw new Error("Please provide all required fields including banner image");
+    throw new Error(errors.join(", "));
   }
 
   const uploadImage = await cloudinary.uploader.upload(req.file.path, { resource_type: 'image' });
   const imageUrl = uploadImage.secure_url;
 
   const event = await Event.create({
-    title,
-    description,
+    title: title.trim(),
+    description: description.trim(),
     date,
-    location,
+    location: location.trim(),
     banner: imageUrl,
-    totalSeats,
+    organizerName: organizerName.trim(),
+    contactInfo: contactInfo.trim(),
+    totalSeats: Number(totalSeats),
     availableSeats:
-      availableSeats !== undefined ? availableSeats : totalSeats,
+      availableSeats !== undefined ? Number(availableSeats) : Number(totalSeats),
     status: status || "upcoming",
     createdBy: req.user._id,
   });
@@ -100,7 +108,23 @@ export const updateEvent = asyncHandler(async (req, res) => {
     totalSeats,
     availableSeats,
     status,
+    organizerName,
+    contactInfo,
   } = req.body;
+
+  // Validation for update (only validate fields that are provided)
+  const errors = [];
+  if (title !== undefined && !title.trim()) errors.push("Event title cannot be empty");
+  if (description !== undefined && !description.trim()) errors.push("Description cannot be empty");
+  if (location !== undefined && !location.trim()) errors.push("Location cannot be empty");
+  if (totalSeats !== undefined && Number(totalSeats) < 1) errors.push("Total seats must be at least 1");
+  if (organizerName !== undefined && !organizerName.trim()) errors.push("Organizer name cannot be empty");
+  if (contactInfo !== undefined && !contactInfo.trim()) errors.push("Contact info cannot be empty");
+
+  if (errors.length > 0) {
+    res.status(400);
+    throw new Error(errors.join(", "));
+  }
 
   // Update banner if new file uploaded
   if (req.file) {
@@ -117,6 +141,8 @@ export const updateEvent = asyncHandler(async (req, res) => {
   event.totalSeats = totalSeats ?? event.totalSeats;
   event.availableSeats = availableSeats ?? event.availableSeats;
   event.status = status ?? event.status;
+  event.organizerName = organizerName ?? event.organizerName;
+  event.contactInfo = contactInfo ?? event.contactInfo;
 
   const updatedEvent = await event.save();
   res.json(updatedEvent);

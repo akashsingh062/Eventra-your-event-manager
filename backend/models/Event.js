@@ -11,6 +11,16 @@ const eventSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    organizerName: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    contactInfo: {
+      type: String,
+      required: true,
+      trim: true,
+    },
     totalSeats: {type: Number,required: true,min: 1,},
     availableSeats: {type: Number,required: true,min: 0,},
     status: {type: String,enum: ["upcoming", "completed"],default: "upcoming",},

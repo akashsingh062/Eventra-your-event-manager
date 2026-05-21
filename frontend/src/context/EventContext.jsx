@@ -46,12 +46,43 @@ export const EventProvider = ({ children }) => {
     }
   };
 
+  // Unregister from an event
+  const unregisterFromEvent = async (eventId) => {
+    try {
+      const { data } = await api.delete(
+        `/api/registrations/${eventId}`
+      );
+      toast.success(data.message || "Unregistered successfully");
+
+      // Refresh relevant data
+      fetchEvents();
+      fetchMyRegistrations();
+      return true;
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message || "Failed to unregister"
+      );
+      return false;
+    }
+  };
+
+  // Check if user is registered for a specific event
+  const checkRegistration = async (eventId) => {
+    try {
+      const { data } = await api.get(
+        `/api/registrations/check/${eventId}`
+      );
+      return data;
+    } catch (error) {
+      return { isRegistered: false, registrationId: null };
+    }
+  };
+
   // Fetch logged-in user's registrations
   const fetchMyRegistrations = async () => {
     setRegistrationsLoading(true);
     try {
       const { data } = await api.get("/api/registrations/my");
-      console.log("my", data)
       setMyRegistrations(data || []);
     } catch (error) {
       toast.error(
@@ -73,6 +104,8 @@ export const EventProvider = ({ children }) => {
         fetchEvents,
         fetchMyRegistrations,
         registerForEvent,
+        unregisterFromEvent,
+        checkRegistration,
       }}
     >
       {children}

@@ -2,32 +2,68 @@ import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import api from "../services/api";
 import dayjs from "dayjs";
-import { FaCalendarAlt, FaMapMarkerAlt, FaUsers, FaArrowLeft, FaClock, FaCheckCircle } from "react-icons/fa";
+import { FaCalendarAlt, FaMapMarkerAlt, FaUsers, FaArrowLeft, FaClock, FaCheckCircle, FaUserTie, FaPhoneAlt } from "react-icons/fa";
 import { useEvent } from "../context/EventContext";
+import { useAuth } from "../context/AuthContext";
 
 const EventDetails = () => {
   const { id } = useParams();
   const [event, setEvent] = useState(null);
   const [loading, setLoading] = useState(true);
-  const { registerForEvent } = useEvent();
+  const [isRegistered, setIsRegistered] = useState(false);
+  const [regLoading, setRegLoading] = useState(false);
+  const { registerForEvent, unregisterFromEvent, checkRegistration } = useEvent();
+  const { user } = useAuth();
   const [error, setError] = useState("");
+
+  const fetchEvent = async () => {
+    try {
+      const { data } = await api.get(`/api/events/${id}`);
+      setEvent(data);
+    } catch (err) {
+      setError("Failed to load event details.");
+      console.log(err);
+    }
+  };
+
+  const fetchRegistrationStatus = async () => {
+    if (!user) return;
+    const result = await checkRegistration(id);
+    setIsRegistered(result.isRegistered);
+  };
 
   useEffect(() => {
     window.scrollTo(0, 0);
-    const fetchEvent = async () => {
+    const init = async () => {
       setLoading(true);
-      try {
-        const { data } = await api.get(`/api/events/${id}`);
-        setEvent(data);
-      } catch (err) {
-        setError("Failed to load event details.");
-        console.log(err);
-      } finally {
-        setLoading(false);
-      }
+      await fetchEvent();
+      await fetchRegistrationStatus();
+      setLoading(false);
     };
-    fetchEvent();
-  }, [id]);
+    init();
+  }, [id, user]);
+
+  const handleRegister = async () => {
+    setRegLoading(true);
+    const success = await registerForEvent(event._id);
+    if (success) {
+      setIsRegistered(true);
+      // Refresh event data to get updated seats
+      await fetchEvent();
+    }
+    setRegLoading(false);
+  };
+
+  const handleUnregister = async () => {
+    setRegLoading(true);
+    const success = await unregisterFromEvent(event._id);
+    if (success) {
+      setIsRegistered(false);
+      // Refresh event data to get updated seats
+      await fetchEvent();
+    }
+    setRegLoading(false);
+  };
 
   if (loading) {
     return (
@@ -55,12 +91,17 @@ const EventDetails = () => {
   let statusLabel = "Upcoming";
   if (isPastEvent || event.status === "completed") {
     statusLabel = "Completed";
-  } else if (isFull) {
+  } else if (isFull && !isRegistered) {
     statusLabel = "Full";
   }
 
-  const isDisabled = statusLabel !== "Upcoming";
+  const isEventClosed = statusLabel === "Completed";
   const seatPercent = event.totalSeats > 0 ? ((event.totalSeats - event.availableSeats) / event.totalSeats) * 100 : 0;
+
+  // Determine button state
+  const isLoggedIn = Boolean(user);
+  const canRegister = isLoggedIn && statusLabel === "Upcoming" && !isRegistered && !isFull;
+  const canUnregister = isLoggedIn && isRegistered && !isEventClosed;
 
   return (
     <div className="bg-transparent pb-20">
@@ -101,6 +142,12 @@ const EventDetails = () => {
                 <FaMapMarkerAlt className="text-cream-400" />
                 {event.location}
               </span>
+              {event.organizerName && (
+                <span className="inline-flex items-center gap-2 text-sm text-cream-500 bg-white/10 backdrop-blur-md px-4 py-2 rounded-full">
+                  <FaUserTie className="text-cream-400" />
+                  {event.organizerName}
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -122,7 +169,7 @@ const EventDetails = () => {
               </p>
             </div>
 
-            {/* Additional Info Card */}
+            {/* Event Information Card */}
             <div className="bg-white dark:bg-navy-200 rounded-3xl p-8 md:p-10 shadow-sm border border-gray-100 dark:border-navy-400/30">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-cream-500 mb-6 flex items-center gap-3">
                 <span className="w-1.5 h-8 bg-navy-500 rounded-full"></span>
@@ -131,7 +178,11 @@ const EventDetails = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div className="bg-cream-900 dark:bg-navy-300/30 rounded-2xl p-5">
                   <p className="text-xs text-gray-500 dark:text-steel-500 font-medium uppercase tracking-wider mb-1">Organized By</p>
-                  <p className="font-semibold text-gray-900 dark:text-cream-500">{event.createdBy?.name || "Admin"}</p>
+                  <p className="font-semibold text-gray-900 dark:text-cream-500">{event.organizerName || "—"}</p>
+                </div>
+                <div className="bg-cream-900 dark:bg-navy-300/30 rounded-2xl p-5">
+                  <p className="text-xs text-gray-500 dark:text-steel-500 font-medium uppercase tracking-wider mb-1">Contact Info</p>
+                  <p className="font-semibold text-gray-900 dark:text-cream-500">{event.contactInfo || "—"}</p>
                 </div>
                 <div className="bg-cream-900 dark:bg-navy-300/30 rounded-2xl p-5">
                   <p className="text-xs text-gray-500 dark:text-steel-500 font-medium uppercase tracking-wider mb-1">Total Capacity</p>
@@ -140,10 +191,6 @@ const EventDetails = () => {
                 <div className="bg-cream-900 dark:bg-navy-300/30 rounded-2xl p-5">
                   <p className="text-xs text-gray-500 dark:text-steel-500 font-medium uppercase tracking-wider mb-1">Event Status</p>
                   <p className="font-semibold text-gray-900 dark:text-cream-500 capitalize">{event.status}</p>
-                </div>
-                <div className="bg-cream-900 dark:bg-navy-300/30 rounded-2xl p-5">
-                  <p className="text-xs text-gray-500 dark:text-steel-500 font-medium uppercase tracking-wider mb-1">Created On</p>
-                  <p className="font-semibold text-gray-900 dark:text-cream-500">{dayjs(event.createdAt).format("DD MMM YYYY")}</p>
                 </div>
               </div>
             </div>
@@ -154,9 +201,13 @@ const EventDetails = () => {
             <div className="bg-white dark:bg-navy-200 rounded-3xl overflow-hidden shadow-xl shadow-gray-200/50 dark:shadow-none border border-gray-100 dark:border-navy-400/30">
 
               {/* Card Header */}
-              <div className="bg-navy-500 dark:bg-navy-300 px-8 py-6">
-                <h3 className="text-xl font-bold text-white">Secure Your Spot</h3>
-                <p className="text-steel-700 text-sm mt-1">Register now before seats run out</p>
+              <div className={`px-8 py-6 ${isRegistered ? "bg-green-700 dark:bg-green-800" : "bg-navy-500 dark:bg-navy-300"}`}>
+                <h3 className="text-xl font-bold text-white">
+                  {isRegistered ? "You're Registered! ✓" : "Secure Your Spot"}
+                </h3>
+                <p className="text-steel-700 text-sm mt-1">
+                  {isRegistered ? "You have a confirmed spot for this event" : "Register now before seats run out"}
+                </p>
               </div>
 
               <div className="p-8 space-y-8">
@@ -185,6 +236,34 @@ const EventDetails = () => {
                     </div>
                   </div>
 
+                  {event.organizerName && (
+                    <div className="flex items-start gap-4">
+                      <div className="w-12 h-12 rounded-2xl bg-cream-700 dark:bg-cream-100/10 flex items-center justify-center text-cream-200 dark:text-cream-400 shrink-0">
+                        <FaUserTie size={20} />
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500 dark:text-steel-500 font-medium">Organizer</p>
+                        <p className="text-base font-semibold text-gray-900 dark:text-cream-500 mt-0.5">
+                          {event.organizerName}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {event.contactInfo && (
+                    <div className="flex items-start gap-4">
+                      <div className="w-12 h-12 rounded-2xl bg-steel-900 dark:bg-steel-300/20 flex items-center justify-center text-steel-400 dark:text-steel-500 shrink-0">
+                        <FaPhoneAlt size={20} />
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500 dark:text-steel-500 font-medium">Contact</p>
+                        <p className="text-base font-semibold text-gray-900 dark:text-cream-500 mt-0.5">
+                          {event.contactInfo}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="flex items-start gap-4">
                     <div className="w-12 h-12 rounded-2xl bg-brick-500/10 dark:bg-brick-500/20 flex items-center justify-center text-brick-500 dark:text-brick-700 shrink-0">
                       <FaUsers size={20} />
@@ -208,22 +287,52 @@ const EventDetails = () => {
                   </div>
                 </div>
 
-                <div className="pt-6 border-t border-gray-100 dark:border-navy-400/30">
-                  <button
-                    disabled={isDisabled}
-                    onClick={() => registerForEvent(event._id)}
-                    className={`w-full py-4 rounded-2xl font-bold text-lg transition-all transform active:scale-95 ${
-                      isDisabled
-                        ? "bg-gray-100 dark:bg-navy-400/30 text-gray-400 dark:text-steel-400 cursor-not-allowed shadow-none"
-                        : "bg-brick-500 text-white hover:bg-brick-400 shadow-lg shadow-brick-500/25 dark:shadow-none hover:shadow-xl"
-                    }`}
-                  >
-                    {statusLabel === "Upcoming" ? "Register Now" : "Registration Closed"}
-                  </button>
-                  {statusLabel === "Upcoming" && (
-                    <p className="text-center text-xs text-gray-500 dark:text-steel-400 mt-4">
-                      By registering, you agree to the campus event policies.
-                    </p>
+                <div className="pt-6 border-t border-gray-100 dark:border-navy-400/30 space-y-3">
+                  {!isLoggedIn ? (
+                    <>
+                      <Link
+                        to="/login"
+                        className="block w-full py-4 rounded-2xl font-bold text-lg text-center bg-brick-500 text-white hover:bg-brick-400 shadow-lg shadow-brick-500/25 dark:shadow-none hover:shadow-xl transition-all"
+                      >
+                        Login to Register
+                      </Link>
+                      <p className="text-center text-xs text-gray-500 dark:text-steel-400">
+                        You need an account to register for events.
+                      </p>
+                    </>
+                  ) : canUnregister ? (
+                    <>
+                      <button
+                        disabled={regLoading}
+                        onClick={handleUnregister}
+                        className="w-full py-4 rounded-2xl font-bold text-lg transition-all transform active:scale-95 bg-red-50 dark:bg-brick-500/10 text-brick-500 dark:text-brick-700 border-2 border-brick-500/30 hover:bg-brick-500/10 dark:hover:bg-brick-500/20 disabled:opacity-60"
+                      >
+                        {regLoading ? "Processing..." : "Unregister from Event"}
+                      </button>
+                      <p className="text-center text-xs text-gray-500 dark:text-steel-400">
+                        You can cancel your registration anytime before the event.
+                      </p>
+                    </>
+                  ) : canRegister ? (
+                    <>
+                      <button
+                        disabled={regLoading}
+                        onClick={handleRegister}
+                        className="w-full py-4 rounded-2xl font-bold text-lg transition-all transform active:scale-95 bg-brick-500 text-white hover:bg-brick-400 shadow-lg shadow-brick-500/25 dark:shadow-none hover:shadow-xl disabled:opacity-60"
+                      >
+                        {regLoading ? "Processing..." : "Register for Event"}
+                      </button>
+                      <p className="text-center text-xs text-gray-500 dark:text-steel-400">
+                        By registering, you agree to the campus event policies.
+                      </p>
+                    </>
+                  ) : (
+                    <button
+                      disabled
+                      className="w-full py-4 rounded-2xl font-bold text-lg bg-gray-100 dark:bg-navy-400/30 text-gray-400 dark:text-steel-400 cursor-not-allowed shadow-none"
+                    >
+                      {isEventClosed ? "Event Completed" : isFull ? "No Seats Available" : "Registration Closed"}
+                    </button>
                   )}
                 </div>
               </div>

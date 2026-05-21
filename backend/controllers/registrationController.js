@@ -67,6 +67,80 @@ export const registerForEvent = asyncHandler(async (req, res) => {
   }
 });
 
+// @desc    Unregister logged-in user from an event
+// @route   DELETE /api/registrations/:eventId
+// @access  Private (student)
+export const unregisterFromEvent = asyncHandler(async (req, res) => {
+  const { eventId } = req.params;
+  const userId = req.user._id;
+
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    // Find the registration
+    const registration = await Registration.findOne({
+      user: userId,
+      event: eventId,
+    }).session(session);
+
+    if (!registration) {
+      res.status(404);
+      throw new Error("You are not registered for this event");
+    }
+
+    // Find the event to restore seat
+    const event = await Event.findById(eventId).session(session);
+
+    if (!event) {
+      res.status(404);
+      throw new Error("Event not found");
+    }
+
+    // Prevent unregistering from completed events
+    if (event.status === "completed") {
+      res.status(400);
+      throw new Error("Cannot unregister from a completed event");
+    }
+
+    // Delete the registration
+    await registration.deleteOne({ session });
+
+    // Restore available seat (but don't exceed totalSeats)
+    event.availableSeats = Math.min(event.availableSeats + 1, event.totalSeats);
+    await event.save({ session });
+
+    await session.commitTransaction();
+    session.endSession();
+
+    res.json({
+      message: "Successfully unregistered from event",
+    });
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    throw error;
+  }
+});
+
+// @desc    Check if user is registered for an event
+// @route   GET /api/registrations/check/:eventId
+// @access  Private (student)
+export const checkRegistration = asyncHandler(async (req, res) => {
+  const { eventId } = req.params;
+  const userId = req.user._id;
+
+  const registration = await Registration.findOne({
+    user: userId,
+    event: eventId,
+  });
+
+  res.json({
+    isRegistered: Boolean(registration),
+    registrationId: registration?._id || null,
+  });
+});
+
 // @desc    Get logged-in user's registrations
 // @route   GET /api/registrations/my
 // @access  Private (student)
@@ -77,7 +151,7 @@ export const getMyRegistrations = asyncHandler(async (req, res) => {
     .populate({
       path: "event",
       select:
-        "title description date location banner totalSeats availableSeats status",
+        "title description date location banner totalSeats availableSeats status organizerName contactInfo",
     })
     .sort({ createdAt: -1 });
 
@@ -135,7 +209,7 @@ export const deleteRegistration = asyncHandler(async (req, res) => {
   // Restore seat count
   const event = await Event.findById(registration.event);
   if (event) {
-    event.availableSeats += 1;
+    event.availableSeats = Math.min(event.availableSeats + 1, event.totalSeats);
     await event.save();
   }
 

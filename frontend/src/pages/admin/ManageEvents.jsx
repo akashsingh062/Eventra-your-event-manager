@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { FaCalendarAlt, FaMapMarkerAlt, FaUsers, FaImage, FaPlus, FaPen, FaTrash, FaTimes, FaCloudUploadAlt } from "react-icons/fa";
+import { FaCalendarAlt, FaMapMarkerAlt, FaUsers, FaImage, FaPlus, FaPen, FaTrash, FaTimes, FaCloudUploadAlt, FaUserTie, FaPhoneAlt, FaExclamationTriangle } from "react-icons/fa";
 import dayjs from "dayjs";
 import api from "../../services/api";
+import { toast } from "react-toastify";
 
 const ManageEvents = () => {
   const [events, setEvents] = useState([]);
@@ -19,6 +20,9 @@ const ManageEvents = () => {
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState("upcoming");
   const [editingId, setEditingId] = useState(null);
+  const [organizerName, setOrganizerName] = useState("");
+  const [contactInfo, setContactInfo] = useState("");
+  const [formErrors, setFormErrors] = useState([]);
 
   const fetchEvents = async () => {
     setLoading(true);
@@ -46,10 +50,33 @@ const ManageEvents = () => {
     setBanner(null);
     setBannerPreview(null);
     setEditingId(null);
+    setOrganizerName("");
+    setContactInfo("");
+    setFormErrors([]);
+  };
+
+  const validateForm = () => {
+    const errors = [];
+    const isEdit = Boolean(editingId);
+    if (!title.trim()) errors.push("Event title is required");
+    if (!date) errors.push("Event date is required");
+    if (!location.trim()) errors.push("Location is required");
+    if (!totalSeats || Number(totalSeats) < 1) errors.push("Total seats must be at least 1");
+    if (!organizerName.trim()) errors.push("Organizer name is required");
+    if (!contactInfo.trim()) errors.push("Contact info is required");
+    if (!description.trim()) errors.push("Description is required");
+    if (!isEdit && !banner && !bannerPreview) errors.push("Banner image is required");
+    return errors;
   };
 
   const handleCreate = async (e) => {
     e.preventDefault();
+    const errors = validateForm();
+    if (errors.length > 0) {
+      setFormErrors(errors);
+      return;
+    }
+    setFormErrors([]);
     setSubmitting(true);
     const isEdit = Boolean(editingId);
     try {
@@ -60,6 +87,8 @@ const ManageEvents = () => {
       formData.append("totalSeats", Number(totalSeats));
       formData.append("description", description);
       formData.append("status", status);
+      formData.append("organizerName", organizerName);
+      formData.append("contactInfo", contactInfo);
       if (banner) {
         formData.append("banner", banner);
       }
@@ -68,17 +97,20 @@ const ManageEvents = () => {
         await api.put(`/api/events/${editingId}`, formData, {
           headers: { "Content-Type": "multipart/form-data" },
         });
+        toast.success("Event updated successfully");
       } else {
         await api.post("/api/events", formData, {
           headers: { "Content-Type": "multipart/form-data" },
         });
+        toast.success("Event created successfully");
       }
 
       resetForm();
       setShowForm(false);
       fetchEvents();
     } catch (err) {
-      console.error("Failed to create event", err);
+      const msg = err.response?.data?.message || "Failed to save event";
+      toast.error(msg);
     } finally {
       setSubmitting(false);
     }
@@ -102,8 +134,11 @@ const ManageEvents = () => {
     setTotalSeats(event.totalSeats);
     setDescription(event.description);
     setStatus(event.status || "upcoming");
+    setOrganizerName(event.organizerName || "");
+    setContactInfo(event.contactInfo || "");
     setBanner(null);
     setBannerPreview(event.banner);
+    setFormErrors([]);
     setShowForm(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -182,6 +217,21 @@ const ManageEvents = () => {
             </div>
 
             <form onSubmit={handleCreate} className="p-8 space-y-8">
+              {/* Validation Errors */}
+              {formErrors.length > 0 && (
+                <div className="bg-brick-900/20 dark:bg-brick-500/10 border border-brick-500/30 rounded-2xl p-5">
+                  <div className="flex items-center gap-2 text-brick-500 dark:text-brick-700 font-semibold text-sm mb-2">
+                    <FaExclamationTriangle />
+                    Please fix the following errors:
+                  </div>
+                  <ul className="list-disc list-inside space-y-1">
+                    {formErrors.map((err, i) => (
+                      <li key={i} className="text-sm text-brick-500 dark:text-brick-700">{err}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
               {/* Row 1: Title */}
               <div>
                 <label className={labelClass}>
@@ -193,7 +243,6 @@ const ManageEvents = () => {
                   className={inputClass}
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  required
                 />
               </div>
 
@@ -209,7 +258,6 @@ const ManageEvents = () => {
                     className={inputClass}
                     value={date}
                     onChange={(e) => setDate(e.target.value)}
-                    required
                   />
                 </div>
 
@@ -224,13 +272,12 @@ const ManageEvents = () => {
                     className={inputClass}
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
-                    required
                   />
                 </div>
 
                 <div>
                   <label className={labelClass}>
-                    <FaUsers className="inline mr-2 text-pink-500" />
+                    <FaUsers className="inline mr-2 text-brick-500" />
                     Total Seats <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -240,7 +287,6 @@ const ManageEvents = () => {
                     value={totalSeats}
                     onChange={(e) => setTotalSeats(e.target.value)}
                     min="1"
-                    required
                   />
                 </div>
 
@@ -256,6 +302,37 @@ const ManageEvents = () => {
                     <option value="upcoming">Upcoming</option>
                     <option value="completed">Completed</option>
                   </select>
+                </div>
+              </div>
+
+              {/* Row: Organizer Name & Contact Info */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className={labelClass}>
+                    <FaUserTie className="inline mr-2 text-cream-200" />
+                    Organizer Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. John Doe / Computer Science Dept."
+                    className={inputClass}
+                    value={organizerName}
+                    onChange={(e) => setOrganizerName(e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <label className={labelClass}>
+                    <FaPhoneAlt className="inline mr-2 text-steel-400" />
+                    Contact Info <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. organizer@college.edu or +91-9876543210"
+                    className={inputClass}
+                    value={contactInfo}
+                    onChange={(e) => setContactInfo(e.target.value)}
+                  />
                 </div>
               </div>
 
@@ -315,7 +392,6 @@ const ManageEvents = () => {
                   className="w-full min-h-36 px-4 py-3 rounded-xl bg-gray-50 dark:bg-navy-300/20 border border-gray-200 dark:border-navy-400/30 text-gray-900 dark:text-cream-500 placeholder-gray-400 dark:placeholder-steel-500 focus:outline-none focus:ring-2 focus:ring-navy-600 focus:border-transparent transition-all text-sm resize-y"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  required
                 />
               </div>
 
