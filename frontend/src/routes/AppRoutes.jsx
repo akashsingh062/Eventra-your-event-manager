@@ -9,6 +9,7 @@ import EventDetails from "../pages/EventDetails";
 import NotFound from "../pages/NotFound";
 
 import ProtectedRoute from "../components/common/ProtectedRoute";
+import GuestRoute from "../components/common/GuestRoute";
 
 import AdminDashboard from "../pages/admin/Dashboard";
 import ManageEvents from "../pages/admin/ManageEvents";
@@ -21,8 +22,22 @@ const AppRoutes = () => {
     <Routes>
       {/* Public Routes */}
       <Route path="/" element={<Home />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
+      <Route
+        path="/login"
+        element={
+          <GuestRoute>
+            <Login />
+          </GuestRoute>
+        }
+      />
+      <Route
+        path="/register"
+        element={
+          <GuestRoute>
+            <Register />
+          </GuestRoute>
+        }
+      />
       <Route path="/events" element={<Events />} />
       <Route path="/events/:id" element={<EventDetails />} />
 
