@@ -30,6 +30,12 @@ const buildQRPayload = (registration) => {
 export const registerForEvent = asyncHandler(async (req, res) => {
   const { eventId } = req.params;
   const userId = req.user._id;
+  const numberOfPeople = req.body.numberOfPeople ? parseInt(req.body.numberOfPeople, 10) : 1;
+
+  if (isNaN(numberOfPeople) || numberOfPeople < 1 || numberOfPeople > 6) {
+    res.status(400);
+    throw new Error("Invalid number of people. Must be between 1 and 6.");
+  }
 
   // Check if event exists
   const event = await Event.findById(eventId);
@@ -49,9 +55,9 @@ export const registerForEvent = asyncHandler(async (req, res) => {
     throw new Error("Event is already completed");
   }
 
-  if (event.availableSeats <= 0) {
+  if (event.availableSeats < numberOfPeople) {
     res.status(400);
-    throw new Error("No seats available");
+    throw new Error(`Only ${event.availableSeats} seats available`);
   }
 
   // Check for existing registration
@@ -65,8 +71,8 @@ export const registerForEvent = asyncHandler(async (req, res) => {
 
   // Use atomic operations (no transaction required — works without replica set)
   const updatedEvent = await Event.findOneAndUpdate(
-    { _id: eventId, availableSeats: { $gt: 0 } },
-    { $inc: { availableSeats: -1 } },
+    { _id: eventId, availableSeats: { $gte: numberOfPeople } },
+    { $inc: { availableSeats: -numberOfPeople } },
     { new: true }
   );
 
@@ -83,6 +89,7 @@ export const registerForEvent = asyncHandler(async (req, res) => {
       ticketStatus: "active",
       qrToken,
       amountPaid: 0,
+      numberOfPeople,
     });
 
     res.status(201).json({
@@ -92,7 +99,7 @@ export const registerForEvent = asyncHandler(async (req, res) => {
     });
   } catch (error) {
     // Rollback seat decrement if registration failed
-    await Event.findByIdAndUpdate(eventId, { $inc: { availableSeats: 1 } });
+    await Event.findByIdAndUpdate(eventId, { $inc: { availableSeats: numberOfPeople } });
 
     if (error.code === 11000) {
       res.status(400);
@@ -139,21 +146,15 @@ export const unregisterFromEvent = asyncHandler(async (req, res) => {
     throw new Error("Cannot unregister from a completed event");
   }
 
+  const seatsToRestore = registration.numberOfPeople || 1;
+
   // Delete registration (atomic, no transaction needed)
   await Registration.findByIdAndDelete(registration._id);
 
-  // Restore seat (atomic, capped at totalSeats)
-  await Event.findOneAndUpdate(
-    { _id: eventId },
-    [
-      {
-        $set: {
-          availableSeats: {
-            $min: [{ $add: ["$availableSeats", 1] }, "$totalSeats"],
-          },
-        },
-      },
-    ]
+  // Restore seats (atomic, capped at totalSeats)
+  await Event.updateOne(
+    { _id: eventId, availableSeats: { $lt: event.totalSeats } },
+    { $inc: { availableSeats: seatsToRestore } }
   );
 
   res.json({
@@ -268,19 +269,16 @@ export const deleteRegistration = asyncHandler(async (req, res) => {
     throw new Error("Registration not found");
   }
 
-  // Restore seat count (atomic)
-  await Event.findOneAndUpdate(
-    { _id: registration.event },
-    [
-      {
-        $set: {
-          availableSeats: {
-            $min: [{ $add: ["$availableSeats", 1] }, "$totalSeats"],
-          },
-        },
-      },
-    ]
-  );
+  const seatsToRestore = registration.numberOfPeople || 1;
+
+  // Restore seat count (atomic, capped at totalSeats)
+  const event = await Event.findById(registration.event);
+  if (event) {
+    await Event.updateOne(
+      { _id: registration.event, availableSeats: { $lt: event.totalSeats } },
+      { $inc: { availableSeats: seatsToRestore } }
+    );
+  }
 
   await registration.deleteOne();
 

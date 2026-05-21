@@ -12,6 +12,7 @@ import paymentRoutes from "./routes/paymentRoutes.js";
 import errorMiddleware from "./middleware/errorMiddleware.js";
 import connectCloudinary from './config/cloudnary.js';
 import adminRoutes from "./routes/adminRoutes.js";
+import couponRoutes from "./routes/couponRoutes.js";
 
 const app = express()
 const PORT = process.env.PORT || 4000
@@ -29,6 +30,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/events", eventRoutes);
 app.use("/api/registrations", registrationRoutes);
 app.use("/api/payments", paymentRoutes);
+app.use("/api/coupons", couponRoutes);
 
 /* =======================
    ADMIN ROUTES

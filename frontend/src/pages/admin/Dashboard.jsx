@@ -42,6 +42,13 @@ const Dashboard = () => {
       iconColor: "text-emerald-600 dark:text-emerald-400",
     },
     {
+      label: "Coupon Discounts",
+      value: `₹${stats.totalCouponDiscount || 0}`,
+      icon: <FaTicketAlt />,
+      iconBg: "bg-purple-500/10 dark:bg-purple-500/20",
+      iconColor: "text-purple-600 dark:text-purple-400",
+    },
+    {
       label: "Total Events",
       value: stats.totalEvents,
       icon: <FaCalendarAlt />,
@@ -50,25 +57,25 @@ const Dashboard = () => {
       trend: `${stats.paidEvents} paid / ${stats.freeEvents} free`,
     },
     {
-      label: "Registrations",
+      label: "Total Bookings",
       value: stats.totalRegistrations,
-      icon: <FaTicketAlt />,
+      icon: <FaClipboardList />,
       iconBg: "bg-steel-900 dark:bg-steel-300/20",
       iconColor: "text-steel-400 dark:text-steel-500",
     },
     {
-      label: "Students",
+      label: "Total Attendees",
+      value: stats.totalAttendees || stats.totalRegistrations,
+      icon: <FaUsers />,
+      iconBg: "bg-indigo-500/10 dark:bg-indigo-500/20",
+      iconColor: "text-indigo-600 dark:text-indigo-400",
+    },
+    {
+      label: "Registered Users",
       value: stats.totalUsers,
       icon: <FaUsers />,
       iconBg: "bg-brick-900/20 dark:bg-brick-500/10",
       iconColor: "text-brick-500 dark:text-brick-700",
-    },
-    {
-      label: "Upcoming",
-      value: stats.upcomingEvents,
-      icon: <FaChartLine />,
-      iconBg: "bg-cream-700 dark:bg-cream-100/10",
-      iconColor: "text-cream-200 dark:text-cream-400",
     },
   ];
 
@@ -101,7 +108,7 @@ const Dashboard = () => {
             <p className="text-gray-500 dark:text-gray-400 font-medium">Loading dashboard...</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-5">
             {statCards.map((card, i) => (
               <div
                 key={i}
@@ -127,7 +134,7 @@ const Dashboard = () => {
         {/* Quick Actions */}
         <section>
           <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-5">Quick Actions</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5">
             <Link
               to="/admin/events"
               className="group bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl p-6 hover:shadow-lg dark:hover:shadow-gray-900/50 hover:border-navy-600/30 dark:hover:border-steel-300/30 transition-all duration-300"
@@ -161,6 +168,24 @@ const Dashboard = () => {
               </h3>
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-xs leading-normal">
                 Review student sign-ups and manage attendees.
+              </p>
+            </Link>
+
+            <Link
+              to="/admin/coupons"
+              className="group bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl p-6 hover:shadow-lg dark:hover:shadow-gray-900/50 hover:border-purple-500/30 dark:hover:border-purple-500/30 transition-all duration-300"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-12 rounded-2xl bg-purple-500/10 dark:bg-purple-500/20 flex items-center justify-center text-purple-600 dark:text-purple-400 text-lg">
+                  <FaTicketAlt />
+                </div>
+                <FaArrowRight className="text-gray-300 dark:text-gray-700 group-hover:text-purple-600 group-hover:translate-x-1 transition-all" />
+              </div>
+              <h3 className="font-bold text-gray-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-500 transition-colors">
+                Manage Coupons
+              </h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-xs leading-normal">
+                Create, monitor, and configure discount coupons.
               </p>
             </Link>
 

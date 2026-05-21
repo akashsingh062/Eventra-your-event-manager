@@ -1,213 +1,147 @@
-
-
 # 🎓 Eventra – Campus Event Management System
 
-Eventra is a **full‑stack MERN application** built to manage campus events efficiently.  
-It provides **role‑based access** for **Students** and **Admins**, enabling smooth event discovery, registrations, and complete administrative control.
+<div align="center">
 
-This project is designed with **real‑world application architecture** and focuses on **security, scalability, and clean UI/UX**.
+  [![Live Demo](https://img.shields.io/badge/Live%20Demo-Online-brightgreen?style=for-the-badge&logo=render&logoColor=white)](https://eventra-your-event-manager.onrender.com/)
+  [![GitHub License](https://img.shields.io/github/license/akashsingh062/Eventra-your-event-manager?style=for-the-badge)](https://github.com/akashsingh062/Eventra-your-event-manager/blob/main/LICENSE)
+  [![Vite](https://img.shields.io/badge/Vite-7.3-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev/)
+  [![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
+  [![Node](https://img.shields.io/badge/Node.js-20-339933?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/)
+
+  **Eventra** is a professional, full‑stack MERN application designed to manage, register, and ticket campus events. Featuring role‑based student and admin dashboards, Razorpay payments, QR‑code ticketing, and live camera‑based checking verification, it delivers a production-grade campus event lifecycle.
+
+  ### [🔗 Visit Live Website](https://eventra-your-event-manager.onrender.com/)
+</div>
 
 ---
 
-## 🌐 Live Demo
+## 🌟 Key Features
 
-🔗 **Project Link:**  
-https://eventra-your-event-manager.onrender.com
+### 👨‍🎓 Student Features
+*   **Explore Campus Events**: Discover free and paid events on a clean, responsive layout.
+*   **Event Registrations**: Register for free events or purchase paid events using integrated checkout.
+*   **Razorpay Integration**: Real-time payments processing with INR currency support.
+*   **Simulated Sandbox Checkout**: Built-in test payment modal for testing checkout flow in non-production environments when API keys aren't set.
+*   **QR-Code Tickets**: Instant generation of secure QR tickets containing registration tokens, available for download as offline PNG cards.
+*   **Seat Trackers**: Real-time visual meters showing remaining available seats per event.
 
-## 🚀 Features
-
-### 👨‍🎓 Student
-- View all available campus events
-- Register for events
-- View registered events
-- Seat availability tracking
-- Secure authentication
-
-### 🧑‍💼 Admin
-- Admin dashboard with analytics
-- Create, update, and delete events
-- Upload event banners (Cloudinary)
-- View all event registrations
-- Delete registrations (auto seat restore)
-- Role‑based admin sidebar
-- Secure admin‑only routes
+### 🧑‍💼 Admin Features
+*   **Event Management**: Full CRUD capabilities to create, edit, or delete events.
+*   **Rich Analytics Dashboard**: View total revenue, registrations, active/upcoming events, and student growth stats.
+*   **Cloudinary Uploads**: Easily drag-and-drop or select banner files for event listings.
+*   **Registration Auditing**: Direct list view of all tickets, with the ability to delete registrations and restore seat capacities.
+*   **QR Check-In Scanner**: Live webcam/camera reader to scan and verify student tickets at the venue. Includes HTML5 manual lookup fallback and sound effects feedback on verification.
+*   **Optimized Performance**: Mongoose indexes on frequently searched parameters (`razorpayOrderId`, `createdBy`, `date`, and `status`).
 
 ---
 
 ## 🏗️ Tech Stack
 
-### Frontend
-- React (Vite)
-- Tailwind CSS
-- React Router DOM
-- Axios
-- Context API
-- Lucide Icons
-
-### Backend
-- Node.js
-- Express.js
-- MongoDB & Mongoose
-- JWT Authentication
-- Multer (file uploads)
-- Cloudinary (image hosting)
+| Frontend | Backend | Database & Cloud |
+| :--- | :--- | :--- |
+| **React 18** (Vite build system) | **Node.js** & **Express.js** | **MongoDB Atlas** (NoSQL Database) |
+| **Tailwind CSS** (Custom Styling) | **JWT (JSON Web Tokens)** | **Mongoose** (ODM / Indexing) |
+| **React Router DOM v6** (Routing) | **Multer** & **Cloudinary SDK** | **Cloudinary** (Asset Storage) |
+| **qrcode.react** (Synchronous Canvas QR) | **Razorpay Webhooks & SDK** | **Render** (Production Deployment) |
+| **React-Toastify** (Toast Alerts) | **Bcryptjs** (Password Hashing) | |
 
 ---
 
-## 🔐 Authentication & Authorization
-
-- JWT‑based authentication
-- Role‑based access control:
-  - `student`
-  - `admin`
-- Protected frontend routes
-- Protected backend routes using middleware
-
----
-
-## 📁 Project Structure
+## 📂 File Architecture
 
 ### Frontend
 ```
-src/
+frontend/src/
  ├── components/
- │   ├── admin/
- │   ├── student/
- │   └── common/
+ │   ├── admin/         # Admin Sidebar and Widgets
+ │   ├── student/       # Event Cards, QRTicket component
+ │   └── common/        # Navbar, Footer, Theme toggle, Route protection
  ├── pages/
- │   ├── admin/
- │   ├── auth/
- │   └── student/
- ├── context/
- ├── routes/
- ├── services/
- └── assets/
+ │   ├── admin/         # Dashboard, ManageEvents, Registrations, CheckIn scanner
+ │   ├── auth/          # Login & Register views
+ │   └── student/       # Home feed, Events explorer, MyRegistrations
+ ├── context/           # AuthContext & EventContext (Global states)
+ └── services/          # API Axios configuration
 ```
 
 ### Backend
 ```
 backend/
- ├── controllers/
- ├── models/
- ├── routes/
- ├── middleware/
- ├── config/
- └── server.js
+ ├── config/            # MongoDB, Cloudinary, and Razorpay initializers
+ ├── controllers/       # Auth, Event, Registration, and Payment controllers
+ ├── middleware/        # JWT Authentication and error-handling middlewares
+ ├── models/            # Event, Registration, and User Mongoose schemas
+ └── server.js          # Express entry point
 ```
 
 ---
 
-## 🛠️ API Routes Overview
+## 🔐 Security Hardening & Optimizations
 
-### Public / Student
-```
-GET    /api/events
-POST   /api/registrations/:eventId
-GET    /api/registrations/my
-```
-
-### Admin
-```
-GET    /api/admin/dashboard
-
-GET    /api/admin/events/:id
-PUT    /api/admin/events/:id
-DELETE /api/admin/events/:id
-GET    /api/admin/events/:id/registrations
-
-GET    /api/admin/registrations
-DELETE /api/admin/registrations/:id
-```
-
-All admin routes are protected using:
-```
-authMiddleware + roleMiddleware("admin")
-```
+*   **Database Indexing**: Unique and sparse index on `razorpayOrderId` prevents order duplication. Indexing on `createdBy`, `date`, and `status` optimizes dashboard queries.
+*   **Input Sanitization**: Password length boundaries (minimum 6 characters) and email pattern validation added during signup before password hashing.
+*   **Proportional Seat Adjustment**: Delta calculations ensure that changing `totalSeats` updates `availableSeats` proportionally without corrupting capacity limits.
+*   **Production Environment Safeguards**: Payment simulation mode is blocked in production. Mock bypasses throw errors if `NODE_ENV === "production"`.
+*   **Efficient Rendering**: Switched from vector `QRCodeSVG` to `QRCodeCanvas` for ticket generation, preventing browser extensions from blocking QR code rendering and making ticket downloads synchronous and instant.
 
 ---
 
-## 📊 Admin Dashboard
+## ⚙️ Local Development Setup
 
-The admin dashboard displays:
-- Total events
-- Total registrations
-- Total students
-- Upcoming events
-- Completed events
-
-All statistics are aggregated securely on the backend.
-
----
-
-## 🖼️ Image Uploads
-
-- Event banners uploaded using **Multer**
-- Stored on **Cloudinary**
-- Automatically linked to events
-
----
-
-## ⚙️ Setup Instructions
-
-### 1️⃣ Clone Repository
+### 1️⃣ Clone the Repository
 ```bash
-git clone https://github.com/your-username/eventra.git
-cd eventra
+git clone https://github.com/akashsingh062/Eventra-your-event-manager.git
+cd Eventra-your-event-manager
 ```
 
-### 2️⃣ Backend Setup
+### 2️⃣ Backend Configuration
+Navigate to the backend directory and install dependencies:
 ```bash
 cd backend
 npm install
-npm run dev
 ```
-
-Create `.env` file:
+Create a `.env` file in the `backend` folder:
 ```env
 PORT=4000
-MONGO_URI=your_mongodb_uri
-JWT_SECRET=your_secret
-CLOUDINARY_CLOUD_NAME=xxx
-CLOUDINARY_API_KEY=xxx
-CLOUDINARY_API_SECRET=xxx
-```
+MONGO_URI=your_mongodb_connection_string
+JWT_SECRET=your_jwt_secret_phrase
+CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
+CLOUDINARY_API_KEY=your_cloudinary_api_key
+CLOUDINARY_API_SECRET=your_cloudinary_api_secret
 
-### 3️⃣ Frontend Setup
+# Optional: Real Razorpay Keys (If left empty, system enters Simulator Mode in dev)
+RAZORPAY_KEY_ID=your_razorpay_key_id
+RAZORPAY_KEY_SECRET=your_razorpay_key_secret
+```
+Start the backend server:
 ```bash
-cd frontend
-npm install
 npm run dev
 ```
 
----
-
-## 🧠 Key Learnings
-
-- Role‑based application architecture
-- Secure route protection
-- Context‑based state management
-- Reusable admin UI components
-- Real‑world CRUD workflows
-- File upload handling in MERN stack
-
----
-
-## 📌 Future Improvements
-- Event search & filters
-- Pagination & sorting
-- Attendance tracking
-- CSV export for registrations
-- Admin analytics charts
-- Notification system
+### 3️⃣ Frontend Configuration
+Navigate to the frontend directory and install dependencies:
+```bash
+cd ../frontend
+npm install
+```
+Create a `.env` file in the `frontend` folder:
+```env
+VITE_API_URL=http://localhost:4000
+VITE_RAZORPAY_KEY_ID=your_razorpay_key_id
+```
+Start the frontend development server:
+```bash
+npm run dev
+```
+Open `http://localhost:5173` to view the application.
 
 ---
 
 ## 👨‍💻 Author
-**Akash Singh**  
-Student | Full‑Stack Developer  
 
-Built as a real‑world MERN project for learning and portfolio use.
+**Akash Singh**
+*   GitHub: [@akashsingh062](https://github.com/akashsingh062)
+*   Role: Full‑Stack Developer
 
 ---
-
-⭐ If you like this project, consider giving it a star on GitHub!
+⭐ If you find this project useful, please consider giving it a star on GitHub!

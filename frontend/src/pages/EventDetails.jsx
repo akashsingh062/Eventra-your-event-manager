@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import api from "../services/api";
 import dayjs from "dayjs";
@@ -18,6 +18,13 @@ const EventDetails = () => {
   const [showTicket, setShowTicket] = useState(false);
   const [showPaymentSim, setShowPaymentSim] = useState(false);
   const [simOrderId, setSimOrderId] = useState("");
+  
+  // Group booking & coupon states
+  const [numberOfPeople, setNumberOfPeople] = useState(1);
+  const [couponCode, setCouponCode] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
+  const [couponLoading, setCouponLoading] = useState(false);
+
   const {
     registerForEvent,
     unregisterFromEvent,
@@ -25,11 +32,12 @@ const EventDetails = () => {
     createPaymentOrder,
     verifyPayment,
     handlePaymentFailure,
+    validateCoupon,
   } = useEvent();
   const { user } = useAuth();
   const [error, setError] = useState("");
 
-  const fetchEvent = async () => {
+  const fetchEvent = useCallback(async () => {
     try {
       const { data } = await api.get(`/api/events/${id}`);
       setEvent(data);
@@ -37,14 +45,14 @@ const EventDetails = () => {
       setError("Failed to load event details.");
       toast.error(err.response?.data?.message || "Failed to load event details.");
     }
-  };
+  }, [id]);
 
-  const fetchRegistrationStatus = async () => {
+  const fetchRegistrationStatus = useCallback(async () => {
     if (!user) return;
     const result = await checkRegistration(id);
     setIsRegistered(result.isRegistered);
     setRegistrationData(result);
-  };
+  }, [id, user, checkRegistration]);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -55,7 +63,49 @@ const EventDetails = () => {
       setLoading(false);
     };
     init();
-  }, [id, user]);
+  }, [fetchEvent, fetchRegistrationStatus]);
+
+  // Compute pricing during render (fixes setState in effect linter error)
+  const getPricing = () => {
+    if (!event) return { subtotal: 0, discount: 0, finalTotal: 0 };
+    const subtotal = event.price * numberOfPeople;
+    let discount = 0;
+    if (appliedCoupon) {
+      if (appliedCoupon.discountType === "percentage") {
+        discount = (subtotal * appliedCoupon.discountValue) / 100;
+      } else if (appliedCoupon.discountType === "fixed") {
+        discount = appliedCoupon.discountValue;
+      }
+      discount = Math.min(discount, subtotal);
+    }
+    return {
+      subtotal,
+      discount,
+      finalTotal: Math.max(0, subtotal - discount),
+    };
+  };
+
+  const pricing = getPricing();
+
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) {
+      toast.error("Please enter a coupon code");
+      return;
+    }
+    setCouponLoading(true);
+    const result = await validateCoupon(couponCode, event._id, numberOfPeople);
+    if (result && result.valid) {
+      setAppliedCoupon(result);
+      toast.success("Coupon applied successfully!");
+    }
+    setCouponLoading(false);
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponCode("");
+    toast.info("Coupon removed");
+  };
 
   // Load Razorpay script
   const loadRazorpayScript = () => {
@@ -75,7 +125,7 @@ const EventDetails = () => {
 
   const handleFreeRegister = async () => {
     setRegLoading(true);
-    const result = await registerForEvent(event._id);
+    const result = await registerForEvent(event._id, numberOfPeople);
     if (result) {
       setIsRegistered(true);
       await fetchEvent();
@@ -87,16 +137,31 @@ const EventDetails = () => {
   const handlePaidRegister = async () => {
     setRegLoading(true);
 
-    // Load Razorpay script
-    const loaded = await loadRazorpayScript();
-    if (!loaded) {
+    // Create order first to check if coupon covered full cost (bypass payment)
+    const orderData = await createPaymentOrder(
+      event._id,
+      numberOfPeople,
+      appliedCoupon?.couponCode || null
+    );
+
+    if (!orderData) {
       setRegLoading(false);
       return;
     }
 
-    // Create order
-    const orderData = await createPaymentOrder(event._id);
-    if (!orderData) {
+    // Bypass Razorpay payment if 100% coupon discount made total ₹0
+    if (orderData.registrationCompleted) {
+      setIsRegistered(true);
+      await fetchEvent();
+      await fetchRegistrationStatus();
+      setShowTicket(true);
+      setRegLoading(false);
+      return;
+    }
+
+    // Load Razorpay script
+    const loaded = await loadRazorpayScript();
+    if (!loaded) {
       setRegLoading(false);
       return;
     }
@@ -113,7 +178,7 @@ const EventDetails = () => {
       amount: orderData.amount,
       currency: orderData.currency,
       name: "Eventra",
-      description: `Ticket for ${event.title}`,
+      description: `Ticket for ${event.title} (x${numberOfPeople})`,
       order_id: orderData.orderId,
       handler: async function (response) {
         // Verify payment
@@ -149,7 +214,7 @@ const EventDetails = () => {
     };
 
     const rzp = new window.Razorpay(options);
-    rzp.on("payment.failed", async function (response) {
+    rzp.on("payment.failed", async function () {
       await handlePaymentFailure(orderData.orderId);
       await fetchEvent();
       setRegLoading(false);
@@ -459,8 +524,100 @@ const EventDetails = () => {
                     </div>
                   </div>
                 </div>
+              </div>
 
-                <div className="pt-6 border-t border-gray-100 dark:border-navy-400/30 space-y-3">
+              <div className="p-8 space-y-8">
+                {canRegister && (
+                  <div className="space-y-4 pb-6 border-b border-gray-100 dark:border-navy-400/30">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 dark:text-steel-600 mb-1.5">
+                        Number of Attendees
+                      </label>
+                      <select
+                        value={numberOfPeople}
+                        onChange={(e) => setNumberOfPeople(parseInt(e.target.value, 10))}
+                        className="w-full bg-cream-900 dark:bg-navy-300 border border-gray-200 dark:border-navy-400/40 rounded-xl px-4 py-3 text-base font-semibold text-gray-900 dark:text-cream-500 focus:outline-hidden focus:ring-2 focus:ring-brick-500"
+                      >
+                        {[1, 2, 3, 4, 5, 6].map((num) => (
+                          <option key={num} value={num} disabled={num > event.availableSeats}>
+                            {num} {num === 1 ? "Person" : "People"} {num > event.availableSeats ? "(N/A)" : ""}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {!event.isFree && (
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 dark:text-steel-600 mb-1.5">
+                          Have a Coupon?
+                        </label>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={couponCode}
+                            onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                            placeholder="ENTER CODE"
+                            disabled={!!appliedCoupon}
+                            className="flex-1 bg-cream-900 dark:bg-navy-300 border border-gray-200 dark:border-navy-400/40 rounded-xl px-4 py-2.5 text-sm uppercase font-bold tracking-wider text-gray-900 dark:text-cream-500 placeholder-gray-400 disabled:opacity-60 focus:outline-hidden focus:ring-2 focus:ring-brick-500"
+                          />
+                          {appliedCoupon ? (
+                            <button
+                              type="button"
+                              onClick={handleRemoveCoupon}
+                              className="px-4 py-2.5 bg-brick-500/10 text-brick-500 rounded-xl font-bold text-xs hover:bg-brick-500/20 transition-all"
+                            >
+                              Remove
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={handleApplyCoupon}
+                              disabled={couponLoading || !couponCode.trim()}
+                              className="px-5 py-2.5 bg-navy-500 text-white rounded-xl font-bold text-xs hover:bg-navy-400 transition-all disabled:opacity-50"
+                            >
+                              {couponLoading ? "Applying..." : "Apply"}
+                            </button>
+                          )}
+                        </div>
+                        {appliedCoupon && (
+                          <p className="text-xs font-semibold text-green-600 dark:text-green-400 mt-2 flex items-center gap-1">
+                            ✓ Code applied! {appliedCoupon.discountType === "percentage" ? `${appliedCoupon.discountValue}%` : `₹${appliedCoupon.discountValue}`} off.
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Pricing breakdown summary */}
+                    <div className="bg-cream-900 dark:bg-navy-300/30 rounded-2xl p-4.5 space-y-2.5 text-sm border border-gray-100 dark:border-navy-400/20">
+                      <div className="flex justify-between">
+                        <span className="text-gray-500 dark:text-steel-500">Ticket Price:</span>
+                        <span className="font-semibold text-gray-900 dark:text-cream-500">
+                          {event.isFree ? "Free" : `₹${event.price} × ${numberOfPeople}`}
+                        </span>
+                      </div>
+                      {!event.isFree && (
+                        <>
+                          <div className="flex justify-between">
+                            <span className="text-gray-500 dark:text-steel-500">Subtotal:</span>
+                            <span className="font-semibold text-gray-900 dark:text-cream-500">₹{pricing.subtotal}</span>
+                          </div>
+                          {pricing.discount > 0 && (
+                            <div className="flex justify-between text-green-600 dark:text-green-400 font-medium">
+                              <span>Discount:</span>
+                              <span>-₹{pricing.discount}</span>
+                            </div>
+                          )}
+                          <div className="flex justify-between pt-2 border-t border-gray-200 dark:border-navy-400/30 font-bold text-[15px] text-gray-900 dark:text-cream-500">
+                            <span>Total Amount:</span>
+                            <span>₹{pricing.finalTotal}</span>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                <div className="pt-6 space-y-3">
                   {!isLoggedIn ? (
                     <>
                       <Link
@@ -506,11 +663,19 @@ const EventDetails = () => {
                         onClick={handleRegister}
                         className="w-full py-4 rounded-2xl font-bold text-lg transition-all transform active:scale-95 bg-brick-500 text-white hover:bg-brick-400 shadow-lg shadow-brick-500/25 dark:shadow-none hover:shadow-xl disabled:opacity-60"
                       >
-                        {regLoading ? "Processing..." : event.isFree ? "Register for Event" : `Pay ₹${event.price} & Register`}
+                        {regLoading
+                          ? "Processing..."
+                          : event.isFree
+                          ? `Register ${numberOfPeople} ${numberOfPeople === 1 ? "Person" : "People"}`
+                          : pricing.finalTotal === 0
+                          ? "Complete Free Checkout"
+                          : `Pay ₹${pricing.finalTotal} & Register`}
                       </button>
                       <p className="text-center text-xs text-gray-500 dark:text-steel-400">
                         {event.isFree
                           ? "By registering, you agree to the campus event policies."
+                          : pricing.finalTotal === 0
+                          ? "100% discount applied. Verify and complete checkout immediately."
                           : "You'll be redirected to Razorpay for secure payment."}
                       </p>
                     </>
@@ -563,8 +728,20 @@ const EventDetails = () => {
                 <span className="font-semibold text-gray-900 dark:text-cream-500">{simOrderId}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-400 font-medium">Amount:</span>
-                <span className="font-semibold text-gray-900 dark:text-cream-500">₹{event.price}</span>
+                <span className="text-gray-400 font-medium">Tickets:</span>
+                <span className="font-semibold text-gray-900 dark:text-cream-500">
+                  {numberOfPeople} {numberOfPeople === 1 ? "seat" : "seats"}
+                </span>
+              </div>
+              {appliedCoupon && (
+                <div className="flex justify-between text-green-600 dark:text-green-400">
+                  <span className="font-medium">Coupon Applied:</span>
+                  <span className="font-semibold">{appliedCoupon.couponCode} (-₹{pricing.discount})</span>
+                </div>
+              )}
+              <div className="flex justify-between border-t border-gray-200 dark:border-navy-400/30 pt-2 text-base font-bold">
+                <span className="text-gray-400">Total Payable:</span>
+                <span className="text-gray-900 dark:text-cream-500">₹{pricing.finalTotal}</span>
               </div>
             </div>
 

@@ -14,7 +14,7 @@ const QRTicket = ({ event, registration, qrPayload }) => {
     const canvas = document.createElement("canvas");
     const scale = 2;
     const width = 440;
-    const height = 620;
+    const height = 680;
     canvas.width = width * scale;
     canvas.height = height * scale;
     const ctx = canvas.getContext("2d");
@@ -77,14 +77,31 @@ const QRTicket = ({ event, registration, qrPayload }) => {
       : "FREE";
     ctx.fillStyle = isPaid ? "#f5ae22" : "#669bbc";
     ctx.font = "bold 13px Outfit, sans-serif";
-    ctx.fillText(badgeText, 24, 196);
+    ctx.fillText(badgeText, 24, 192);
+
+    // Group size and coupon details (if any)
+    const numPeople = registration?.numberOfPeople || 1;
+    const couponVal = registration?.couponCode || null;
+    const discountVal = registration?.discountAmount || 0;
+
+    if (numPeople > 1) {
+      ctx.fillStyle = "#e0aaff";
+      ctx.font = "bold 13px Outfit, sans-serif";
+      ctx.fillText(`👥  Group Size: ${numPeople} seats`, 24, 214);
+    }
+
+    if (couponVal) {
+      ctx.fillStyle = "#80ed99";
+      ctx.font = "13px Outfit, sans-serif";
+      ctx.fillText(`🏷️  Coupon: ${couponVal} (-₹${discountVal})`, 24, 236);
+    }
 
     // QR Code - draw directly from canvas
     const qrCanvas = ticketEl.querySelector(".qr-canvas");
     if (qrCanvas) {
       const qrSize = 180;
       const qrX = (width - qrSize) / 2;
-      const qrY = 220;
+      const qrY = 260;
 
       // QR background
       ctx.fillStyle = "#ffffff";
@@ -103,7 +120,7 @@ const QRTicket = ({ event, registration, qrPayload }) => {
     const ticketId = registration?.qrToken
       ? registration.qrToken.substring(0, 16).toUpperCase()
       : "—";
-    ctx.fillText(`TICKET: ${ticketId}`, width / 2, 220 + 180 + 36);
+    ctx.fillText(`TICKET: ${ticketId}`, width / 2, 260 + 180 + 36);
 
     // Bottom dashed divider
     ctx.strokeStyle = "rgba(102, 155, 188, 0.3)";
@@ -135,6 +152,10 @@ const QRTicket = ({ event, registration, qrPayload }) => {
   const ticketId = registration?.qrToken
     ? registration.qrToken.substring(0, 16).toUpperCase()
     : "—";
+
+  const numPeople = registration?.numberOfPeople || 1;
+  const couponVal = registration?.couponCode || null;
+  const discountVal = registration?.discountAmount || 0;
 
   return (
     <div className="space-y-4">
@@ -184,6 +205,16 @@ const QRTicket = ({ event, registration, qrPayload }) => {
                 <FaUserTie className="text-cream-400 text-xs" />
                 {event?.organizerName}
               </div>
+              {numPeople > 1 && (
+                <div className="flex items-center gap-2 font-bold text-purple-300 text-xs mt-1 bg-purple-500/10 w-max px-2.5 py-0.5 rounded-full border border-purple-500/20">
+                  👥 Group Size: {numPeople} seats
+                </div>
+              )}
+              {couponVal && (
+                <div className="flex items-center gap-2 font-bold text-green-300 text-xs mt-1 bg-green-500/10 w-max px-2.5 py-0.5 rounded-full border border-green-500/20">
+                  🏷️ Coupon: {couponVal} (-₹{discountVal})
+                </div>
+              )}
             </div>
           </div>
 

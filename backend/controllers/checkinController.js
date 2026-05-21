@@ -57,6 +57,9 @@ export const verifyTicket = asyncHandler(async (req, res) => {
       checkedInAt: registration.checkedInAt,
       amountPaid: registration.amountPaid,
       registeredAt: registration.registeredAt,
+      numberOfPeople: registration.numberOfPeople,
+      couponCode: registration.couponCode,
+      discountAmount: registration.discountAmount,
     },
   });
 });

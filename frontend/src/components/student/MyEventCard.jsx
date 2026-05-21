@@ -55,6 +55,16 @@ const MyEventCard = ({ event }) => {
               {event.paymentStatus}
             </span>
           )}
+          {event.numberOfPeople && event.numberOfPeople > 1 && (
+            <span className="px-3 py-1 text-[10px] font-bold uppercase rounded-full shadow-sm backdrop-blur-md bg-purple-600/90 text-white">
+              👥 Group of {event.numberOfPeople}
+            </span>
+          )}
+          {event.couponCode && (
+            <span className="px-3 py-1 text-[10px] font-bold uppercase rounded-full shadow-sm backdrop-blur-md bg-indigo-600/90 text-white">
+              🏷️ {event.couponCode}
+            </span>
+          )}
         </div>
         <div className="absolute top-4 right-4 z-20 flex flex-col gap-2 items-end">
           <span

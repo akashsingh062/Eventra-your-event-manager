@@ -13,6 +13,8 @@ import {
   FaMapMarkerAlt,
   FaMoneyBillWave,
   FaUserCheck,
+  FaUsers,
+  FaTicketAlt,
 } from "react-icons/fa";
 import dayjs from "dayjs";
 
@@ -23,7 +25,6 @@ const CheckIn = () => {
   const [confirming, setConfirming] = useState(false);
   const [ticketDetails, setTicketDetails] = useState(null);
   const [scanError, setScanError] = useState("");
-  const [scanSuccessMsg, setScanSuccessMsg] = useState("");
 
   const scannerRef = useRef(null);
 
@@ -61,7 +62,7 @@ const CheckIn = () => {
             setActiveTab("manual"); // Switch to detail view mode (manual tab is fine)
             await handleVerifyPayload(decodedText);
           },
-          (error) => {
+          () => {
             // Verbose error logging (can ignore spammy frame errors)
           }
         );
@@ -106,7 +107,6 @@ const CheckIn = () => {
   const handleVerifyPayload = async (payloadStr) => {
     setVerifying(true);
     setScanError("");
-    setScanSuccessMsg("");
     setTicketDetails(null);
     try {
       const { data } = await api.post("/api/admin/checkin/verify", {
@@ -142,7 +142,6 @@ const CheckIn = () => {
       const { data } = await api.post("/api/admin/checkin/confirm", {
         registrationId: ticketDetails._id,
       });
-      setScanSuccessMsg(data.message);
       toast.success(data.message);
       // Refresh local state to show checked-in
       setTicketDetails((prev) => ({
@@ -162,7 +161,6 @@ const CheckIn = () => {
   const handleResetScanner = () => {
     setTicketDetails(null);
     setScanError("");
-    setScanSuccessMsg("");
     setManualCode("");
     setActiveTab("camera");
   };
@@ -361,6 +359,32 @@ const CheckIn = () => {
                       </p>
                     </div>
                   </div>
+
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-gray-50 dark:bg-navy-300/50 flex items-center justify-center text-gray-500 dark:text-cream-500 shrink-0">
+                      <FaUsers />
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-steel-500">Group Size</p>
+                      <p className="text-sm font-semibold text-gray-900 dark:text-cream-300">
+                        {ticketDetails.numberOfPeople || 1} {ticketDetails.numberOfPeople > 1 ? "people" : "person"}
+                      </p>
+                    </div>
+                  </div>
+
+                  {ticketDetails.couponCode && (
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-gray-50 dark:bg-navy-300/50 flex items-center justify-center text-gray-500 dark:text-cream-500 shrink-0">
+                        <FaTicketAlt />
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 dark:text-steel-500">Coupon Used</p>
+                        <p className="text-sm font-bold text-green-600 dark:text-green-400 uppercase">
+                          {ticketDetails.couponCode} (-₹{ticketDetails.discountAmount || 0})
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 

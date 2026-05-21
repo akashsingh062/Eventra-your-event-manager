@@ -17,6 +17,11 @@ const registrationSchema = new mongoose.Schema(
     razorpaySignature: { type: String, default: null },
     amountPaid: { type: Number, default: 0 },
 
+    // Group registration & Coupon details
+    numberOfPeople: { type: Number, default: 1, min: 1, max: 6 },
+    couponCode: { type: String, default: null },
+    discountAmount: { type: Number, default: 0 },
+
     // Ticket fields
     ticketStatus: {
       type: String,

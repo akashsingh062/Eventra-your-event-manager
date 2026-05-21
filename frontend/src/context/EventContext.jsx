@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useState, useCallback } from "react";
 import api from "../services/api";
 import { toast } from "react-toastify";
 
@@ -12,7 +12,7 @@ export const EventProvider = ({ children }) => {
   const [registrationsLoading, setRegistrationsLoading] = useState(false);
 
   // Fetch all events
-  const fetchEvents = async () => {
+  const fetchEvents = useCallback(async () => {
     setEventsLoading(true);
     try {
       const { data } = await api.get("/api/events");
@@ -24,13 +24,30 @@ export const EventProvider = ({ children }) => {
     } finally {
       setEventsLoading(false);
     }
-  };
+  }, []);
+
+  // Fetch logged-in user's registrations
+  const fetchMyRegistrations = useCallback(async () => {
+    setRegistrationsLoading(true);
+    try {
+      const { data } = await api.get("/api/registrations/my");
+      setMyRegistrations(data || []);
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message ||
+          "Failed to load registrations"
+      );
+    } finally {
+      setRegistrationsLoading(false);
+    }
+  }, []);
 
   // Register for a FREE event
-  const registerForEvent = async (eventId) => {
+  const registerForEvent = useCallback(async (eventId, numberOfPeople = 1) => {
     try {
       const { data } = await api.post(
-        `/api/registrations/${eventId}`
+        `/api/registrations/${eventId}`,
+        { numberOfPeople }
       );
       toast.success(data.message || "Registered successfully");
 
@@ -44,10 +61,10 @@ export const EventProvider = ({ children }) => {
       );
       return null;
     }
-  };
+  }, [fetchEvents, fetchMyRegistrations]);
 
   // Unregister from an event
-  const unregisterFromEvent = async (eventId) => {
+  const unregisterFromEvent = useCallback(async (eventId) => {
     try {
       const { data } = await api.delete(
         `/api/registrations/${eventId}`
@@ -64,10 +81,10 @@ export const EventProvider = ({ children }) => {
       );
       return false;
     }
-  };
+  }, [fetchEvents, fetchMyRegistrations]);
 
   // Check if user is registered for a specific event
-  const checkRegistration = async (eventId) => {
+  const checkRegistration = useCallback(async (eventId) => {
     try {
       const { data } = await api.get(
         `/api/registrations/check/${eventId}`
@@ -84,13 +101,15 @@ export const EventProvider = ({ children }) => {
         qrPayload: null,
       };
     }
-  };
+  }, []);
 
   // Create Razorpay order for paid events
-  const createPaymentOrder = async (eventId) => {
+  const createPaymentOrder = useCallback(async (eventId, numberOfPeople = 1, couponCode = null) => {
     try {
       const { data } = await api.post("/api/payments/create-order", {
         eventId,
+        numberOfPeople,
+        couponCode,
       });
       return data;
     } catch (error) {
@@ -99,10 +118,10 @@ export const EventProvider = ({ children }) => {
       );
       return null;
     }
-  };
+  }, []);
 
   // Verify Razorpay payment
-  const verifyPayment = async (paymentData) => {
+  const verifyPayment = useCallback(async (paymentData) => {
     try {
       const { data } = await api.post(
         "/api/payments/verify",
@@ -120,10 +139,10 @@ export const EventProvider = ({ children }) => {
       );
       return null;
     }
-  };
+  }, [fetchEvents, fetchMyRegistrations]);
 
   // Handle payment failure
-  const handlePaymentFailure = async (orderId) => {
+  const handlePaymentFailure = useCallback(async (orderId) => {
     try {
       await api.post("/api/payments/failure", {
         razorpay_order_id: orderId,
@@ -131,23 +150,66 @@ export const EventProvider = ({ children }) => {
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to update payment status");
     }
-  };
+  }, []);
 
-  // Fetch logged-in user's registrations
-  const fetchMyRegistrations = async () => {
-    setRegistrationsLoading(true);
+  // Coupon Validation
+  const validateCoupon = useCallback(async (code, eventId, numberOfPeople = 1) => {
     try {
-      const { data } = await api.get("/api/registrations/my");
-      setMyRegistrations(data || []);
+      const { data } = await api.post("/api/coupons/validate", {
+        code,
+        eventId,
+        numberOfPeople,
+      });
+      return data;
     } catch (error) {
-      toast.error(
-        error.response?.data?.message ||
-          "Failed to load registrations"
-      );
-    } finally {
-      setRegistrationsLoading(false);
+      toast.error(error.response?.data?.message || "Failed to validate coupon");
+      return null;
     }
-  };
+  }, []);
+
+  // Admin Coupon CRUD operations
+  const fetchCoupons = useCallback(async () => {
+    try {
+      const { data } = await api.get("/api/coupons");
+      return data;
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to fetch coupons");
+      return [];
+    }
+  }, []);
+
+  const createCoupon = useCallback(async (couponData) => {
+    try {
+      const { data } = await api.post("/api/coupons", couponData);
+      toast.success("Coupon created successfully");
+      return data;
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to create coupon");
+      return null;
+    }
+  }, []);
+
+  const updateCoupon = useCallback(async (id, couponData) => {
+    try {
+      const { data } = await api.put(`/api/coupons/${id}`, couponData);
+      toast.success("Coupon updated successfully");
+      return data;
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to update coupon");
+      return null;
+    }
+  }, []);
+
+  const deleteCoupon = useCallback(async (id) => {
+    try {
+      await api.delete(`/api/coupons/${id}`);
+      toast.success("Coupon deleted successfully");
+      return true;
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to delete coupon");
+      return false;
+    }
+  }, []);
 
   return (
     <EventContext.Provider
@@ -164,6 +226,11 @@ export const EventProvider = ({ children }) => {
         createPaymentOrder,
         verifyPayment,
         handlePaymentFailure,
+        validateCoupon,
+        fetchCoupons,
+        createCoupon,
+        updateCoupon,
+        deleteCoupon,
       }}
     >
       {children}

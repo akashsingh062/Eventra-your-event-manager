@@ -137,6 +137,11 @@ const AdminRegistrations = () => {
                       <div>
                         <p className="font-semibold text-gray-900 dark:text-white">{reg.user?.name}</p>
                         <p className="text-xs text-gray-500 dark:text-gray-400">{reg.user?.email}</p>
+                        {reg.numberOfPeople && reg.numberOfPeople > 1 && (
+                          <span className="inline-block mt-1 px-2 py-0.5 text-[10px] font-bold bg-purple-100 text-purple-700 dark:bg-purple-950/40 dark:text-purple-400 rounded-full">
+                            👥 Group of {reg.numberOfPeople}
+                          </span>
+                        )}
                       </div>
                     </td>
                     <td className="px-6 py-4">
@@ -148,15 +153,22 @@ const AdminRegistrations = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span
-                        className={`px-2.5 py-1 text-xs font-semibold rounded-full uppercase tracking-wider ${
-                          reg.paymentStatus === "paid" ? "bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400" :
-                          reg.paymentStatus === "free" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400" :
-                          "bg-amber-100 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400"
-                        }`}
-                      >
-                        {reg.paymentStatus || "free"}
-                      </span>
+                      <div className="space-y-1">
+                        <span
+                          className={`px-2.5 py-1 text-xs font-semibold rounded-full uppercase tracking-wider ${
+                            reg.paymentStatus === "paid" ? "bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400" :
+                            reg.paymentStatus === "free" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400" :
+                            "bg-amber-100 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400"
+                          }`}
+                        >
+                          {reg.paymentStatus || "free"}
+                        </span>
+                        {reg.couponCode && (
+                          <div className="text-[11px] font-bold text-green-600 dark:text-green-400">
+                            Code: {reg.couponCode} (-₹{reg.discountAmount})
+                          </div>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4">
                       <span
@@ -213,7 +225,7 @@ const AdminRegistrations = () => {
                     <span className="text-gray-500">Event Date: {dayjs(reg.event?.date).format("DD MMM YYYY")}</span>
                     <span className="text-gray-500">Joined: {dayjs(reg.createdAt).format("DD MMM YYYY")}</span>
                   </div>
-                  <div className="flex gap-2 pt-1">
+                  <div className="flex flex-wrap gap-2 pt-1">
                     <span
                       className={`px-2 py-0.5 text-[10px] font-bold uppercase rounded-full tracking-wider ${
                         reg.paymentStatus === "paid" ? "bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400" :
@@ -223,6 +235,16 @@ const AdminRegistrations = () => {
                     >
                       {reg.paymentStatus || "free"}
                     </span>
+                    {reg.numberOfPeople && reg.numberOfPeople > 1 && (
+                      <span className="px-2 py-0.5 text-[10px] font-bold bg-purple-100 text-purple-700 dark:bg-purple-950/40 dark:text-purple-400 rounded-full">
+                        👥 {reg.numberOfPeople} seats
+                      </span>
+                    )}
+                    {reg.couponCode && (
+                      <span className="px-2 py-0.5 text-[10px] font-bold bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-400 rounded-full uppercase">
+                        🏷️ {reg.couponCode} (-₹{reg.discountAmount})
+                      </span>
+                    )}
                     <span
                       className={`px-2 py-0.5 text-[10px] font-bold uppercase rounded-full tracking-wider ${
                         reg.checkedIn

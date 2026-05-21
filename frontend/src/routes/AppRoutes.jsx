@@ -14,6 +14,7 @@ import AdminDashboard from "../pages/admin/Dashboard";
 import ManageEvents from "../pages/admin/ManageEvents";
 import AdminRegistrations from "../pages/admin/Registrations.jsx";
 import CheckIn from "../pages/admin/CheckIn";
+import ManageCoupons from "../pages/admin/ManageCoupons";
 
 const AppRoutes = () => {
   return (
@@ -59,6 +60,15 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute role="admin">
             <AdminRegistrations />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/admin/coupons"
+        element={
+          <ProtectedRoute role="admin">
+            <ManageCoupons />
           </ProtectedRoute>
         }
       />

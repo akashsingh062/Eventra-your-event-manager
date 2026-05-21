@@ -2,6 +2,7 @@ import crypto from "crypto";
 import asyncHandler from "../utils/asyncHandler.js";
 import Event from "../models/Event.js";
 import Registration from "../models/Registration.js";
+import Coupon from "../models/Coupon.js";
 import razorpayInstance from "../config/razorpay.js";
 
 /**
@@ -27,8 +28,14 @@ const buildQRPayload = (registration) => {
 // @route   POST /api/payments/create-order
 // @access  Private (student)
 export const createOrder = asyncHandler(async (req, res) => {
-  const { eventId } = req.body;
+  const { eventId, numberOfPeople = 1, couponCode = null } = req.body;
   const userId = req.user._id;
+
+  const peopleCount = parseInt(numberOfPeople, 10);
+  if (isNaN(peopleCount) || peopleCount < 1 || peopleCount > 6) {
+    res.status(400);
+    throw new Error("Invalid registration count. Must be between 1 and 6.");
+  }
 
   // Validate event
   const event = await Event.findById(eventId);
@@ -47,9 +54,9 @@ export const createOrder = asyncHandler(async (req, res) => {
     throw new Error("Event is already completed");
   }
 
-  if (event.availableSeats <= 0) {
+  if (event.availableSeats < peopleCount) {
     res.status(400);
-    throw new Error("No seats available");
+    throw new Error(`Only ${event.availableSeats} seats available`);
   }
 
   // Check for existing active registration
@@ -64,27 +71,137 @@ export const createOrder = asyncHandler(async (req, res) => {
     throw new Error("You are already registered for this event");
   }
 
-  // Check for existing pending registration and reuse its order
+  // If there's a pending registration, clean it up and restore its reserved resources first
   const pendingReg = await Registration.findOne({
     user: userId,
     event: eventId,
     paymentStatus: "pending",
   });
-
-  if (pendingReg && pendingReg.razorpayOrderId) {
-    // Return existing pending order
-    return res.json({
-      orderId: pendingReg.razorpayOrderId,
-      amount: event.price * 100,
-      currency: process.env.CURRENCY || "INR",
-      registrationId: pendingReg._id,
-      simulated: pendingReg.razorpayOrderId.startsWith("mock_order_"),
-    });
+  if (pendingReg) {
+    const seatsToRestore = pendingReg.numberOfPeople || 1;
+    await Event.updateOne(
+      { _id: eventId },
+      { $inc: { availableSeats: seatsToRestore } }
+    );
+    if (pendingReg.couponCode) {
+      await Coupon.updateOne(
+        { code: pendingReg.couponCode.toUpperCase() },
+        { $inc: { usedCount: -1 } }
+      );
+    }
+    await pendingReg.deleteOne();
   }
 
-  // Create Razorpay order
+  // Calculate pricing
+  const subtotal = event.price * peopleCount;
+  let discountAmount = 0;
+  let coupon = null;
+
+  if (couponCode) {
+    coupon = await Coupon.findOne({ code: couponCode.toUpperCase() });
+    if (!coupon) {
+      res.status(400);
+      throw new Error("Coupon code is invalid");
+    }
+    if (!coupon.isActive) {
+      res.status(400);
+      throw new Error("This coupon is inactive");
+    }
+    if (new Date(coupon.expiresAt) < new Date()) {
+      res.status(400);
+      throw new Error("This coupon has expired");
+    }
+    if (coupon.usedCount >= coupon.maxUses) {
+      res.status(400);
+      throw new Error("This coupon usage limit has been reached");
+    }
+    if (coupon.applicableEvents && coupon.applicableEvents.length > 0) {
+      const isApplicable = coupon.applicableEvents.some(
+        (id) => id.toString() === eventId.toString()
+      );
+      if (!isApplicable) {
+        res.status(400);
+        throw new Error("This coupon is not applicable to this event");
+      }
+    }
+
+    if (coupon.discountType === "percentage") {
+      discountAmount = (subtotal * coupon.discountValue) / 100;
+    } else if (coupon.discountType === "fixed") {
+      discountAmount = coupon.discountValue;
+    }
+    discountAmount = Math.min(discountAmount, subtotal);
+  }
+
+  const finalTotal = Math.max(0, subtotal - discountAmount);
+
+  // Reserve seat atomically
+  const updatedEvent = await Event.findOneAndUpdate(
+    { _id: eventId, availableSeats: { $gte: peopleCount } },
+    { $inc: { availableSeats: -peopleCount } },
+    { new: true }
+  );
+
+  if (!updatedEvent) {
+    res.status(400);
+    throw new Error("No seats available");
+  }
+
+  // Reserve coupon usage atomically if coupon was applied
+  if (coupon) {
+    const updatedCoupon = await Coupon.findOneAndUpdate(
+      {
+        code: coupon.code,
+        isActive: true,
+        expiresAt: { $gt: new Date() },
+        $expr: { $lt: ["$usedCount", "$maxUses"] }
+      },
+      { $inc: { usedCount: 1 } },
+      { new: true }
+    );
+    if (!updatedCoupon) {
+      // Rollback seats
+      await Event.findByIdAndUpdate(eventId, { $inc: { availableSeats: peopleCount } });
+      res.status(400);
+      throw new Error("Coupon is no longer available or limit reached");
+    }
+  }
+
+  // Case 1: Final total is 0 (100% coupon discount)
+  // Skip Razorpay payment checkout entirely and complete registration immediately
+  if (finalTotal === 0) {
+    try {
+      const qrToken = crypto.randomBytes(32).toString("hex");
+      const registration = await Registration.create({
+        user: userId,
+        event: eventId,
+        paymentStatus: "paid",
+        amountPaid: 0,
+        numberOfPeople: peopleCount,
+        couponCode: coupon ? coupon.code : null,
+        discountAmount,
+        ticketStatus: "active",
+        qrToken,
+      });
+
+      return res.status(201).json({
+        registrationCompleted: true,
+        registrationId: registration._id,
+        message: "Coupon covered full ticket cost. Registration successful!",
+      });
+    } catch (error) {
+      // Rollback seats and coupon usage
+      await Event.findByIdAndUpdate(eventId, { $inc: { availableSeats: peopleCount } });
+      if (coupon) {
+        await Coupon.updateOne({ code: coupon.code }, { $inc: { usedCount: -1 } });
+      }
+      throw error;
+    }
+  }
+
+  // Case 2: Regular flow with Razorpay checkout
   const currency = process.env.CURRENCY || "INR";
-  const amountInPaise = Math.round(event.price * 100);
+  const amountInPaise = Math.round(finalTotal * 100);
 
   let order;
   let isSimulated = false;
@@ -102,6 +219,11 @@ export const createOrder = asyncHandler(async (req, res) => {
   } catch (error) {
     if (process.env.NODE_ENV === "production") {
       console.error("Razorpay API order creation failed in production:", error);
+      // Rollback reserved resources on failure
+      await Event.findByIdAndUpdate(eventId, { $inc: { availableSeats: peopleCount } });
+      if (coupon) {
+        await Coupon.updateOne({ code: coupon.code }, { $inc: { usedCount: -1 } });
+      }
       res.status(500);
       throw new Error("Payment gateway integration failed");
     }
@@ -114,18 +236,6 @@ export const createOrder = asyncHandler(async (req, res) => {
     };
   }
 
-  // Reserve seat atomically
-  const updatedEvent = await Event.findOneAndUpdate(
-    { _id: eventId, availableSeats: { $gt: 0 } },
-    { $inc: { availableSeats: -1 } },
-    { new: true }
-  );
-
-  if (!updatedEvent) {
-    res.status(400);
-    throw new Error("No seats available");
-  }
-
   // Create pending registration
   try {
     const registration = await Registration.create({
@@ -133,7 +243,10 @@ export const createOrder = asyncHandler(async (req, res) => {
       event: eventId,
       paymentStatus: "pending",
       razorpayOrderId: order.id,
-      amountPaid: event.price,
+      amountPaid: finalTotal,
+      numberOfPeople: peopleCount,
+      couponCode: coupon ? coupon.code : null,
+      discountAmount,
       ticketStatus: "active",
     });
 
@@ -145,8 +258,11 @@ export const createOrder = asyncHandler(async (req, res) => {
       simulated: isSimulated,
     });
   } catch (error) {
-    // Rollback seat if registration creation failed
-    await Event.findByIdAndUpdate(eventId, { $inc: { availableSeats: 1 } });
+    // Rollback seat and coupon usage if registration creation failed
+    await Event.findByIdAndUpdate(eventId, { $inc: { availableSeats: peopleCount } });
+    if (coupon) {
+      await Coupon.updateOne({ code: coupon.code }, { $inc: { usedCount: -1 } });
+    }
 
     if (error.code === 11000) {
       res.status(400);
@@ -187,10 +303,17 @@ export const verifyPayment = asyncHandler(async (req, res) => {
         { paymentStatus: "failed", ticketStatus: "cancelled" }
       );
 
-      // Restore seat
+      // Restore seats and coupon count
       const failedReg = await Registration.findOne({ razorpayOrderId: razorpay_order_id });
       if (failedReg) {
-        await Event.findByIdAndUpdate(failedReg.event, { $inc: { availableSeats: 1 } });
+        const seatsToRestore = failedReg.numberOfPeople || 1;
+        await Event.findByIdAndUpdate(failedReg.event, { $inc: { availableSeats: seatsToRestore } });
+        if (failedReg.couponCode) {
+          await Coupon.updateOne(
+            { code: failedReg.couponCode.toUpperCase() },
+            { $inc: { usedCount: -1 } }
+          );
+        }
       }
 
       res.status(400);
@@ -245,19 +368,23 @@ export const handlePaymentFailure = asyncHandler(async (req, res) => {
     return res.json({ message: "No pending registration found" });
   }
 
-  // Restore seat
-  await Event.findOneAndUpdate(
-    { _id: registration.event },
-    [
-      {
-        $set: {
-          availableSeats: {
-            $min: [{ $add: ["$availableSeats", 1] }, "$totalSeats"],
-          },
-        },
-      },
-    ]
-  );
+  // Restore seats (atomic, capped at totalSeats)
+  const seatsToRestore = registration.numberOfPeople || 1;
+  const event = await Event.findById(registration.event);
+  if (event) {
+    await Event.updateOne(
+      { _id: registration.event, availableSeats: { $lt: event.totalSeats } },
+      { $inc: { availableSeats: seatsToRestore } }
+    );
+  }
+
+  // Restore coupon usage count
+  if (registration.couponCode) {
+    await Coupon.updateOne(
+      { code: registration.couponCode.toUpperCase() },
+      { $inc: { usedCount: -1 } }
+    );
+  }
 
   // Delete the failed registration
   await registration.deleteOne();

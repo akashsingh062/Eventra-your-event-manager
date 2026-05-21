@@ -4,6 +4,7 @@ import {
   CalendarPlus,
   Users,
   Scan,
+  Ticket,
   LogOut,
   Menu,
   X,
@@ -101,6 +102,15 @@ const AdminSidebar = () => {
           >
             <Users className="w-5 h-5" />
             Registrations
+          </NavLink>
+
+          <NavLink
+            to="/admin/coupons"
+            onClick={() => setOpen(false)}
+            className={navLinkClass}
+          >
+            <Ticket className="w-5 h-5" />
+            Manage Coupons
           </NavLink>
 
           <NavLink

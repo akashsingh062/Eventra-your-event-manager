@@ -3,14 +3,26 @@ import { Link } from "react-router-dom";
 import { FaCalendarAlt, FaUsers, FaArrowRight, FaBolt, FaShieldAlt, FaRocket } from "react-icons/fa";
 import dayjs from "dayjs";
 import { useEvent } from "../context/EventContext";
+import { useAuth } from "../context/AuthContext";
 import EventCard from "../components/student/EventCard";
 
 const Home = () => {
-  const { events, fetchEvents, registerForEvent, eventsLoading: loading } = useEvent();
+  const { user } = useAuth();
+  const {
+    events,
+    fetchEvents,
+    registerForEvent,
+    myRegistrations,
+    fetchMyRegistrations,
+    eventsLoading: loading,
+  } = useEvent();
 
   useEffect(() => {
     fetchEvents();
-  }, []);
+    if (user) {
+      fetchMyRegistrations();
+    }
+  }, [user]);
 
   const upcomingEvents = events.filter((event) => {
     const isPast = dayjs(event.date).isBefore(dayjs(), "day");
@@ -177,6 +189,9 @@ const Home = () => {
                 <EventCard
                   event={event}
                   onRegister={() => registerForEvent(event._id)}
+                  isRegistered={myRegistrations.some(
+                    (reg) => (reg.event?._id || reg.event) === event._id
+                  )}
                 />
               </div>
             ))}

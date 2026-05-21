@@ -243,6 +243,16 @@ export const getAdminDashboardStats = asyncHandler(async (req, res) => {
     { $group: { _id: null, total: { $sum: "$amountPaid" } } },
   ]);
 
+  const totalAttendees = await Registration.aggregate([
+    { $match: { paymentStatus: { $in: ["paid", "free"] } } },
+    { $group: { _id: null, total: { $sum: { $ifNull: ["$numberOfPeople", 1] } } } },
+  ]);
+
+  const totalCouponDiscount = await Registration.aggregate([
+    { $match: { paymentStatus: { $in: ["paid", "free"] } } },
+    { $group: { _id: null, total: { $sum: { $ifNull: ["$discountAmount", 0] } } } },
+  ]);
+
   const paidEvents = await Event.countDocuments({ isFree: false });
   const freeEvents = await Event.countDocuments({ isFree: true });
 
@@ -253,6 +263,8 @@ export const getAdminDashboardStats = asyncHandler(async (req, res) => {
     upcomingEvents,
     completedEvents,
     totalRevenue: totalRevenue[0]?.total || 0,
+    totalAttendees: totalAttendees[0]?.total || 0,
+    totalCouponDiscount: totalCouponDiscount[0]?.total || 0,
     paidEvents,
     freeEvents,
   });

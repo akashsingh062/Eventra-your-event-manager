@@ -2,7 +2,7 @@ import { FaMapMarkerAlt, FaCalendarAlt, FaUsers } from "react-icons/fa";
 import dayjs from "dayjs";
 import { Link, useNavigate } from "react-router-dom";
 
-const EventCard = ({ event, onRegister, isListView = false }) => {
+const EventCard = ({ event, onRegister, isRegistered = false, isListView = false }) => {
   const navigate = useNavigate();
   const {
     title,
@@ -26,7 +26,7 @@ const EventCard = ({ event, onRegister, isListView = false }) => {
     statusLabel = "Full";
   }
 
-  const isDisabled = statusLabel !== "Upcoming";
+  const isDisabled = statusLabel !== "Upcoming" || isRegistered;
 
   const handleCardClick = () => {
     navigate(`/events/${event._id}`);
@@ -131,11 +131,15 @@ const EventCard = ({ event, onRegister, isListView = false }) => {
             className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-colors
               ${
                 isDisabled
-                  ? "bg-gray-100 dark:bg-navy-400/30 text-gray-400 dark:text-steel-400 cursor-not-allowed border border-transparent"
+                  ? isRegistered
+                    ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 cursor-default"
+                    : "bg-gray-100 dark:bg-navy-400/30 text-gray-400 dark:text-steel-400 cursor-not-allowed border border-transparent"
                   : "bg-brick-500 text-white hover:bg-brick-400 shadow-md shadow-brick-500/20 dark:shadow-none border border-transparent"
               }`}
           >
-            {statusLabel === "Upcoming"
+            {isRegistered
+              ? "Registered ✓"
+              : statusLabel === "Upcoming"
               ? "Register"
               : "Closed"}
           </button>

@@ -26,3 +26,60 @@ Stack: Error: You are not registered for this event
     at file:///Users/akash/Skill-Stack/Web-Dev-Mastery/React-Projects/06-Eventra/backend/controllers/registrationController.js:120:11
     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
 
+[2026-05-21T05:04:57.119Z] Message: You are already registered for this event
+Details: {}
+Stack: Error: You are already registered for this event
+    at file:///Users/akash/Skill-Stack/Web-Dev-Mastery/React-Projects/06-Eventra/backend/controllers/registrationController.js:61:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+
+[2026-05-21T05:05:32.564Z] Message: Cannot pass an array to query updates unless the `updatePipeline` option is set.
+Details: {}
+Stack: MongooseError: Cannot pass an array to query updates unless the `updatePipeline` option is set.
+    at Query._mergeUpdate (/Users/akash/Skill-Stack/Web-Dev-Mastery/React-Projects/06-Eventra/backend/node_modules/mongoose/lib/query.js:4016:11)
+    at Query.findOneAndUpdate (/Users/akash/Skill-Stack/Web-Dev-Mastery/React-Projects/06-Eventra/backend/node_modules/mongoose/lib/query.js:3470:10)
+    at Model.findOneAndUpdate (/Users/akash/Skill-Stack/Web-Dev-Mastery/React-Projects/06-Eventra/backend/node_modules/mongoose/lib/model.js:2342:13)
+    at file:///Users/akash/Skill-Stack/Web-Dev-Mastery/React-Projects/06-Eventra/backend/controllers/registrationController.js:146:15
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+
+[2026-05-21T05:05:38.653Z] Message: You are not registered for this event
+Details: {}
+Stack: Error: You are not registered for this event
+    at file:///Users/akash/Skill-Stack/Web-Dev-Mastery/React-Projects/06-Eventra/backend/controllers/registrationController.js:120:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+
+[2026-05-21T05:05:55.300Z] Message: Cannot pass an array to query updates unless the `updatePipeline` option is set.
+Details: {}
+Stack: MongooseError: Cannot pass an array to query updates unless the `updatePipeline` option is set.
+    at Query._mergeUpdate (/Users/akash/Skill-Stack/Web-Dev-Mastery/React-Projects/06-Eventra/backend/node_modules/mongoose/lib/query.js:4016:11)
+    at Query.findOneAndUpdate (/Users/akash/Skill-Stack/Web-Dev-Mastery/React-Projects/06-Eventra/backend/node_modules/mongoose/lib/query.js:3470:10)
+    at Model.findOneAndUpdate (/Users/akash/Skill-Stack/Web-Dev-Mastery/React-Projects/06-Eventra/backend/node_modules/mongoose/lib/model.js:2342:13)
+    at file:///Users/akash/Skill-Stack/Web-Dev-Mastery/React-Projects/06-Eventra/backend/controllers/registrationController.js:146:15
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+
+[2026-05-21T05:06:29.443Z] Message: You are not registered for this event
+Details: {}
+Stack: Error: You are not registered for this event
+    at file:///Users/akash/Skill-Stack/Web-Dev-Mastery/React-Projects/06-Eventra/backend/controllers/registrationController.js:120:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+
+[2026-05-21T05:17:17.966Z] Message: Cannot pass an array to query updates unless the `updatePipeline` option is set.
+Details: {}
+Stack: MongooseError: Cannot pass an array to query updates unless the `updatePipeline` option is set.
+    at Query._mergeUpdate (/Users/akash/Skill-Stack/Web-Dev-Mastery/React-Projects/06-Eventra/backend/node_modules/mongoose/lib/query.js:4016:11)
+    at Query.findOneAndUpdate (/Users/akash/Skill-Stack/Web-Dev-Mastery/React-Projects/06-Eventra/backend/node_modules/mongoose/lib/query.js:3470:10)
+    at Model.findOneAndUpdate (/Users/akash/Skill-Stack/Web-Dev-Mastery/React-Projects/06-Eventra/backend/node_modules/mongoose/lib/model.js:2342:13)
+    at file:///Users/akash/Skill-Stack/Web-Dev-Mastery/React-Projects/06-Eventra/backend/controllers/paymentController.js:249:15
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+
+[2026-05-21T05:55:27.484Z] Message: This coupon is not applicable to this event
+Details: {}
+Stack: Error: This coupon is not applicable to this event
+    at file:///Users/akash/Skill-Stack/Web-Dev-Mastery/React-Projects/06-Eventra/backend/controllers/couponController.js:60:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+
+[2026-05-21T05:55:36.096Z] Message: This coupon is not applicable to this event
+Details: {}
+Stack: Error: This coupon is not applicable to this event
+    at file:///Users/akash/Skill-Stack/Web-Dev-Mastery/React-Projects/06-Eventra/backend/controllers/couponController.js:60:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+

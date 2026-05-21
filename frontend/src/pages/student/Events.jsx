@@ -1,14 +1,18 @@
 import { useEffect, useState } from "react";
 import { useEvent } from "../../context/EventContext";
+import { useAuth } from "../../context/AuthContext";
 import EventCard from "../../components/student/EventCard";
 import { FaSearch, FaFilter, FaThLarge, FaList } from "react-icons/fa";
 import dayjs from "dayjs";
 
 const Events = () => {
+  const { user } = useAuth();
   const {
     events,
     fetchEvents,
     registerForEvent,
+    myRegistrations,
+    fetchMyRegistrations,
     eventsLoading: loading,
   } = useEvent();
 
@@ -18,7 +22,10 @@ const Events = () => {
 
   useEffect(() => {
     fetchEvents();
-  }, []);
+    if (user) {
+      fetchMyRegistrations();
+    }
+  }, [user]);
 
   const filteredEvents = events.filter((event) => {
     const matchesSearch = event.title.toLowerCase().includes(searchQuery.toLowerCase());
@@ -153,6 +160,9 @@ const Events = () => {
                   <EventCard
                     event={event}
                     onRegister={() => registerForEvent(event._id)}
+                    isRegistered={myRegistrations.some(
+                      (reg) => (reg.event?._id || reg.event) === event._id
+                    )}
                     isListView={viewMode === "list"}
                   />
                 </div>
