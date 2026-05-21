@@ -41,8 +41,11 @@ const Navbar = () => {
 
   // Close mobile menu on route change
   useEffect(() => {
-    setOpen(false);
-    setProfileOpen(false);
+    const timer = setTimeout(() => {
+      setOpen(false);
+      setProfileOpen(false);
+    }, 0);
+    return () => clearTimeout(timer);
   }, [location.pathname]);
 
   useEffect(() => {
