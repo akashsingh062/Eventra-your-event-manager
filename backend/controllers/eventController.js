@@ -160,8 +160,16 @@ export const updateEvent = asyncHandler(async (req, res) => {
   event.description = description ?? event.description;
   event.date = date ?? event.date;
   event.location = location ?? event.location;
-  event.totalSeats = totalSeats ?? event.totalSeats;
-  event.availableSeats = availableSeats ?? event.availableSeats;
+  
+  // If totalSeats changes, adjust availableSeats proportionally
+  if (totalSeats !== undefined && Number(totalSeats) !== event.totalSeats) {
+    const diff = Number(totalSeats) - event.totalSeats;
+    event.totalSeats = Number(totalSeats);
+    event.availableSeats = Math.max(0, event.availableSeats + diff);
+  } else {
+    event.availableSeats = availableSeats !== undefined ? Number(availableSeats) : event.availableSeats;
+  }
+
   event.status = status ?? event.status;
   event.organizerName = organizerName ?? event.organizerName;
   event.contactInfo = contactInfo ?? event.contactInfo;

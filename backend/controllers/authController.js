@@ -11,6 +11,19 @@ export const registerUser = asyncHandler(async (req, res) => {
     throw new Error("Please provide all required fields");
   }
 
+  // Validate email format
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    res.status(400);
+    throw new Error("Please enter a valid email address");
+  }
+
+  // Validate password length
+  if (password.length < 6) {
+    res.status(400);
+    throw new Error("Password must be at least 6 characters long");
+  }
+
   const userExists = await User.findOne({ email });
 
   if (userExists) {
